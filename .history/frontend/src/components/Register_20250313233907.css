@@ -1,0 +1,41 @@
+/* frontend/src/components/Register.css */
+.form-container {
+    max-width: 500px;
+    margin: 50px auto;
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    background: #fff5f7; /* Soft pink background for fun vibe */
+    text-align: center;
+}
+
+h2 {
+    color: #4A4A4A;
+    margin-bottom: 20px;
+    font-size: 28px;
+}
+
+input {
+    width: 90%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    background-color: #ff69b4; /* Fun pink */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #e0579d; /* Slightly darker pink */
+}

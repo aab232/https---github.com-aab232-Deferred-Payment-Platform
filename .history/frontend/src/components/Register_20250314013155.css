@@ -1,0 +1,30 @@
+/* Styling for the Registration Form */
+.form-container {
+    max-width: 400px;
+    margin: auto;
+    padding: 2rem;
+    background: linear-gradient(80deg, #33000D, #FDD9E5);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    text-align: center;
+  }
+  
+  input, button {
+    margin: 10px 0;
+    padding: 12px;
+    width: 100%;
+    border-radius: 12px;
+    border: none;
+  }
+  
+  button {
+    background-color: #900;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  p {
+    cursor: pointer;
+    color: #900;
+  }  
