@@ -1,0 +1,14 @@
+.back-button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: #F7D6E0; /* Set background to #F7D6E0 */
+    border: 1px solid #343a40; /* Optional: Add a border if you'd like */
+    color: #343a40; /* Text color */
+    cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  
+  .back-button:hover {
+    background: #F7D6E0; /* Maintain the same color on hover */
+    color: white; /* Change text color to white on hover */
+  }  

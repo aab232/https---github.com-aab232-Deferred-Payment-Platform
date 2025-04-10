@@ -1,0 +1,55 @@
+.main-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #f8f9fa;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.taskbar {
+  position: absolute;
+  top: 20px;
+  right: 40px;
+  display: flex;
+  gap: 20px;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.tab {
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: background 0.3s ease, color 0.3s ease;
+  font-weight: bold;
+  color: #343a40;
+}
+
+.tab:hover {
+  background: #F7D6E0;
+  color: white;
+}
+
+.logout {
+  color: red;
+  font-weight: bold;
+}
+
+h1 {
+  font-size: 2rem;
+  color: #343a40;
+  margin-bottom: 20px;
+}
+
+p {
+  color: #6c757d;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  text-align: center;
+  margin-top: 10px;
+}

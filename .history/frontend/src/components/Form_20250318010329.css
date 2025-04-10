@@ -1,0 +1,51 @@
+/* Form Styling for Login & Register */
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(135deg, #6b212e, #E6E6E6);
+  }
+  
+  .form-card {
+    background: white;
+    padding: 40px 60px;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+  }
+  
+  h2 {
+    color: #252f3b;
+  }
+  
+  input {
+    display: block;
+    width: 100%;
+    margin: 10px 0;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 30px;
+  }
+  
+  .btn {
+    padding: 12px 24px;
+    margin-top: 20px;
+    border-radius: 30px;
+    border: none;
+    color: white;
+    background: #44576D;
+    cursor: pointer;
+  }
+  
+  .btn:hover {
+    background: #6b212e;
+  }
+  
+  .link {
+    color: #44576D;
+    cursor: pointer;
+  }
+  

@@ -1,0 +1,123 @@
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(200deg, #eff7f6, #F7D6E0);
+}
+
+.form-card {
+  background: white;
+  padding: 40px 60px;
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+
+h2 {
+  color: #252f3b;
+}
+
+input {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 30px;
+}
+
+.btn {
+  padding: 12px 24px;
+  margin-top: 20px;
+  border-radius: 30px;
+  border: none;
+  color: white;
+  background: #6b212e;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: #a41b34;
+}
+
+.link {
+  color: #6b212e;
+  cursor: pointer;
+}
+
+/* Styling for the permission request button */
+.permission-button {
+  background-color: #6b212e;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 12px;
+  border-radius: 12px;
+  margin-top: 10px;
+  border: none;
+  width: 100%;
+}
+
+.permission-button:hover {
+  background-color: #a41b34;
+}
+
+/* Dropdown menu styling */
+.dropdown {
+  position: absolute;
+  background-color: #f9f9f9;
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+  width: 100%;
+  max-width: 250px;
+  margin-top: 10px;
+  border-radius: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.dropdown ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dropdown li {
+  padding: 8px;
+  cursor: pointer;
+}
+
+.dropdown li:hover {
+  background-color: #f1f1f1;
+}
+
+/* Display the selected permission */
+.permission-selection {
+  margin-top: 10px;
+  font-weight: bold;
+  color: #333;
+}
+
+/* Popup styling */
+.popup {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #f0f8ff;
+  border: 2px solid #ddd;
+  padding: 20px;
+  border-radius: 8px;
+  font-size: 18px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  z-index: 999;
+}
+
+.popup p {
+  text-align: center;
+  margin: 0;
+  color: #333;
+}

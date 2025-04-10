@@ -1,0 +1,135 @@
+/* Main container for the dashboard page */
+.dashboard-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Align card to the top */
+    min-height: 100vh; /* Use min-height to allow content growth */
+    background: linear-gradient(200deg, #eff7f6, #F7D6E0);
+    padding: 50px 20px; /* Add padding around the card */
+    box-sizing: border-box;
+  }
+  
+  /* Card styling, adapted from .form-card */
+  .dashboard-card {
+    background: white;
+    padding: 40px; /* Uniform padding */
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    max-width: 900px; /* Allow card to be wider */
+    width: 100%;
+    text-align: center; /* Center headings and potentially buttons */
+  }
+  
+  /* Main Dashboard Heading */
+  .dashboard-heading {
+    color: #252f3b;
+    font-size: 28px; /* Slightly larger */
+    margin-bottom: 10px;
+  }
+  
+  /* Welcome text */
+  .dashboard-welcome {
+    color: #4a5568; /* Slightly muted color */
+    font-size: 16px;
+    margin-bottom: 40px; /* Space before the grid */
+    text-align: center;
+  }
+  
+  /* Grid container for the dashboard items */
+  .dashboard-grid {
+    display: grid;
+    /* Responsive grid: min 180px width, max 1fr (equal share), auto-fit columns */
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 25px; /* Space between grid items */
+    width: 100%;
+    margin: 0 auto; /* Center grid if card is wider */
+  }
+  
+  /* Styling for each clickable dashboard item */
+  .dashboard-item {
+    background-color: #ffffff; /* White background */
+    padding: 25px 20px;
+    border-radius: 16px; /* Slightly less rounded than card */
+    border: 1px solid #e2e8f0; /* Subtle border */
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
+    display: flex; /* Use flex for alignment if adding icons */
+    flex-direction: column; /* Stack icon and text */
+    justify-content: center; /* Center content vertically */
+    align-items: center; /* Center content horizontally */
+    min-height: 120px; /* Ensure items have some height */
+  }
+  
+  /* Hover effect for dashboard items */
+  .dashboard-item:hover {
+    transform: translateY(-5px); /* Lift effect */
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); /* Enhanced shadow on hover */
+    border-color: #cbd5e0; /* Slightly darker border on hover */
+    /* background-color: #f8fafc; */ /* Optional subtle background change */
+  }
+  
+  /* Title text within each dashboard item */
+  .dashboard-item-title {
+    color: #334155; /* Darker text color for section titles */
+    font-size: 17px;
+    font-weight: 600; /* Semi-bold */
+    margin: 0; /* Remove default margins */
+    line-height: 1.4;
+  }
+  
+  /* Optional: Icon Styling (Uncomment if you add icons) */
+  .dashboard-item-icon {
+    font-size: 28px;
+    margin-bottom: 15px;
+    color: #6b212e; /* Use accent color for icons */
+  }
+  
+  /* Optional: Style for a logout button if added */
+  .dashboard-logout-btn {
+    padding: 10px 20px;
+    margin-top: 40px; /* Space above button */
+    border-radius: 30px;
+    border: none;
+    color: white;
+    background: #6b212e; /* Match theme */
+    cursor: pointer;
+    width: auto; /* Adjust as needed */
+    min-width: 150px;
+    font-size: 16px;
+  }
+  
+  .dashboard-logout-btn:hover {
+    background: #a41b34; /* Match theme hover */
+  }
+  
+  
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    .dashboard-card {
+        padding: 30px 20px;
+    }
+    .dashboard-grid {
+        /* Adjust columns for smaller screens - maybe 2 columns */
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 20px;
+    }
+     .dashboard-item {
+        padding: 20px 15px;
+        min-height: 100px;
+    }
+    .dashboard-item-title {
+        font-size: 15px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+     .dashboard-grid {
+        /* Stack items on very small screens */
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+     .dashboard-heading {
+         font-size: 24px;
+     }
+  }

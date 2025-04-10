@@ -1,0 +1,52 @@
+.form-group {
+    margin-bottom: 20px; /* Spacing between form fields */
+    text-align: left;   /* Ensure labels align left */
+  }
+  
+  .form-group label {
+    display: block;     /* Make label take its own line */
+    margin-bottom: 8px; /* Space between label and input */
+    color: #333;      /* Label color */
+    font-size: 14px;    /* Label font size */
+    font-weight: bold;  /* Make labels stand out */
+  }
+  
+  .form-group input[type="text"],
+  .form-group input[type="email"],
+  .form-group textarea {
+    width: 100%;                /* Make inputs fill the card width */
+    padding: 12px;              /* Padding inside inputs */
+    border: 1px solid #ccc;     /* Subtle border */
+    border-radius: 8px;         /* Slightly rounded corners for inputs */
+    box-sizing: border-box;     /* Include padding/border in element's total width/height */
+    font-size: 14px;            /* Font size inside inputs */
+    margin-top: 0;              /* Remove any default browser margin */
+  }
+  
+  .form-group textarea {
+    resize: vertical;           /* Allow vertical resize only */
+    min-height: 120px;          /* Ensure textarea has a decent default height */
+  }
+  
+  /* Optional: Style for focus state */
+  .form-group input[type="text"]:focus,
+  .form-group input[type="email"]:focus,
+  .form-group textarea:focus {
+    border-color: #6b212e; /* Highlight border with theme color on focus */
+    outline: none;           /* Remove default browser outline */
+    box-shadow: 0 0 0 2px rgba(107, 33, 46, 0.2); /* Subtle glow effect */
+  }
+  
+  /* Optional: Style for placeholder text */
+  ::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+    color: #aaa;
+    opacity: 1; /* Firefox */
+  }
+  
+  :-ms-input-placeholder { /* Internet Explorer 10-11 */
+    color: #aaa;
+  }
+  
+  ::-ms-input-placeholder { /* Microsoft Edge */
+    color: #aaa;
+  }
