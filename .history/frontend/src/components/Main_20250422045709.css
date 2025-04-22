@@ -1,0 +1,158 @@
+/* --- Add these styles to Main.css --- */
+
+/* Make modal backdrop clickable */
+.product-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
+  cursor: pointer; /* Indicate clicking backdrop closes */
+}
+
+.modal-content {
+  /* Keep your existing modal-content styles */
+  cursor: default; /* Override backdrop cursor */
+   /* Add max-height and overflow for potentially long results */
+   max-height: 90vh;
+   overflow-y: auto;
+}
+
+/* BNPL Section specific styling */
+.bnpl-section {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #eee; /* Separator */
+    text-align: center;
+}
+
+.modal-action-button.bnpl-button {
+    background-color: #ffafbd; /* Theme color */
+    color: #333; /* Darker text for better contrast */
+    font-weight: bold;
+    margin-right: 10px; /* Space between buttons */
+}
+.modal-action-button.bnpl-button:hover {
+    background-color: #e8a6ba; /* Slightly darker */
+}
+.modal-action-button.bnpl-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.modal-action-button.add-basket-button {
+    background-color: #6c757d; /* Secondary color */
+}
+.modal-action-button.add-basket-button:hover {
+    background-color: #5a6268;
+}
+
+.assessment-status {
+    font-style: italic;
+    color: #666;
+    margin-top: 15px;
+}
+
+.assessment-error {
+    color: #dc3545; /* Red for errors */
+    font-weight: bold;
+    margin-top: 15px;
+    border: 1px solid #f5c6cb;
+    background-color: #f8d7da;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.assessment-results {
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #f8f9fa; /* Light background for results */
+    border-radius: 8px;
+    text-align: left; /* Align results text left */
+}
+.assessment-results h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #333;
+    text-align: center;
+}
+
+.assessment-approved {
+    color: #28a745; /* Green for approval */
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.assessment-partial {
+    color: #ffc107; /* Yellow/Orange for partial approval */
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.term-selection {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.term-button {
+    padding: 8px 15px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    background-color: #fff;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.term-button:hover {
+    background-color: #e9ecef;
+    border-color: #bbb;
+}
+
+.term-button.selected {
+    background-color: #e8a6ba; /* Use theme color for selected */
+    color: white;
+    border-color: #e8a6ba;
+    font-weight: bold;
+}
+
+.proceed-button {
+    background-color: #28a745; /* Green for proceed */
+    display: block;
+    margin: 15px auto 5px auto; /* Center and space */
+    width: auto; /* Adjust width */
+    min-width: 150px;
+}
+.proceed-button:hover {
+    background-color: #218838;
+}
+.proceed-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.assessment-note {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 15px;
+    text-align: center;
+}
+
+/* Make text look like a link for navigation */
+.link-lookalike {
+    color: #007bff;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.link-lookalike:hover {
+    color: #0056b3;
+}
