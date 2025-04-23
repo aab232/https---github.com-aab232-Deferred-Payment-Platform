@@ -91,4 +91,5 @@ def predict():
 # 4. Run the Flask App
 if __name__ == '__main__':
     print("Starting Flask server on http://localhost:5001")
+    # Use 0.0.0.0 if running in Docker, else localhost
     app.run(host='localhost', port=5001, debug=False) # Set debug=False for stability
