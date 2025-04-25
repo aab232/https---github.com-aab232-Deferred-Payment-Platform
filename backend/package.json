@@ -21,7 +21,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.1",
     "mysql2": "^3.14.0",
-    "node-fetch": "^3.3.2",
+    "node-fetch": "^2.7.0",
     "plaid": "^32.0.0",
     "puppeteer": "^24.4.0"
   }

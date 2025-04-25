@@ -245,7 +245,7 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
         try {
             // Fetch required DB data concurrently
             const creditSql = `SELECT employment_status, person_income, credit_utilization_ratio, payment_history, loan_term, loan_amnt AS original_loan_amount, loan_percent_income FROM credit_data WHERE user_id = ? ORDER BY recorded_at DESC LIMIT 1`;
-            const userSql = `SELECT cb_person_default_on_file, cb_person_cred_hist_length FROM users WHERE user_id = ?`;
+            const userSql = `SELECT employment_status AS user_employment_status, cb_person_default_on_file, cb_person_cred_hist_length FROM users WHERE user_id = ?`; // Corrected to fetch user emp status here if needed
             const [[latestCreditData], [dbUserData]] = await Promise.all([
                  dbPool.query(creditSql, [userId]),
                  dbPool.query(userSql, [userId])
@@ -339,7 +339,7 @@ app.post('/api/assess_credit_simulated', authenticateUser, async (req, res) => {
         try {
              // Fetch required DB data concurrently
              const creditSql = `SELECT employment_status, person_income, credit_utilization_ratio, payment_history, loan_term, loan_amnt AS original_loan_amount, loan_percent_income FROM credit_data WHERE user_id = ? ORDER BY recorded_at DESC LIMIT 1`;
-             const userSql = `SELECT cb_person_default_on_file, cb_person_cred_hist_length FROM users WHERE user_id = ?`;
+             const userSql = `SELECT employment_status AS user_employment_status, cb_person_default_on_file, cb_person_cred_hist_length FROM users WHERE user_id = ?`;
              const [[latestCreditData], [dbUserData]] = await Promise.all([ dbPool.query(creditSql, [userId]), dbPool.query(userSql, [userId]) ]);
              const creditData = latestCreditData || {}; if (!dbUserData) throw new Error("User profile missing.");
              const pIncome = Number(creditData.person_income || dbUserData.person_income || 0);

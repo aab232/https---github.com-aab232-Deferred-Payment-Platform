@@ -249,8 +249,8 @@ h1 {
 .add-basket-button { background-color: #6c757d; }
 .add-basket-button:hover:not(:disabled) { background-color: #5a6268; }
 
-.proceed-button { background-color: #0f5132; display: block; margin: 20px auto 10px auto; }
-.proceed-button:hover:not(:disabled) { background-color: #0f5132; }
+.proceed-button { background-color: #28a745; display: block; margin: 20px auto 10px auto; }
+.proceed-button:hover:not(:disabled) { background-color: #218838; }
 
 
 /* BNPL Section & Results */
