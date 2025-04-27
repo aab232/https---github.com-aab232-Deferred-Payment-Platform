@@ -11,7 +11,7 @@ import FAQ from './components/FAQ';
 import Dashboard from './components/Dashboard';
 import LinkAccount from './components/LinkAccount';
 import CreditHistory from './components/CreditHistory';
-import Repayments from './components/Repayments';
+import Repayment from './components/Repayment';
 
 const App = () => {
   return (
@@ -28,7 +28,7 @@ const App = () => {
         <Route path="/faq" element={<FAQ />} />
         <Route path="/link-account" element={<LinkAccount />} />
         <Route path="/credit-history" element={<CreditHistory />} />
-        <Route path="/repayments" element={<Repayments />} />
+        <Route path="/repayment" element={<Repayment />} />
       </Routes>
     </Router>
   );

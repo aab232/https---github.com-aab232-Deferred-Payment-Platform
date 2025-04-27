@@ -264,7 +264,7 @@ h1 {
     padding: 12px; border-radius: 6px;
 }
 
-.assessment-results { margin-top: 15px; padding: 18px; background-color: #ffc8d8; border: 1px solid #ffc8d8; border-radius: 8px; text-align: left; } /* Light blue background */
+.assessment-results { margin-top: 15px; padding: 18px; background-color: #f0f9ff; border: 1px solid #e8a6ba; border-radius: 8px; text-align: left; } /* Light blue background */
 .assessment-results h4 { margin-top: 0; margin-bottom: 15px; color: #333; text-align: center; font-size: 1.1em;} /* Darker blue heading */
 .assessment-approved { color: #0f5132; font-weight: bold; margin-bottom: 10px; font-size: 1.05em; text-align: center;} /* Green for approved */
 .assessment-partial { color: #664d03; font-weight: 500; margin-bottom: 10px; background-color: #fff3cd; border: 1px solid #ffe69c; padding: 10px; border-radius: 6px;} /* Yellow warning style */

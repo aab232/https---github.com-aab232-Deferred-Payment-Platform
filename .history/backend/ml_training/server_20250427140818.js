@@ -492,7 +492,7 @@ app.post('/api/confirm_bnpl_order', authenticateUser, async (req, res) => {
         };
         // Use explicit column list for INSERT
         const orderSql = 'INSERT INTO orders (user_id, assessment_id, product_title, product_price, loan_amnt, selected_term_months, remaining_balance, order_status, next_payment_due_date, order_timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        const orderValues = [ orderData.user_id, orderData.assessment_id, orderData.product_title, orderData.product_price, orderData.loan_amnt, orderData.selected_term_months, orderData.remaining_balance, orderData.order_status, orderData.next_payment_due_date, orderData.order_timestamp ];
+        const orderValues = [ orderData.user_id, orderData.assessment_id, orderData.product_title, orderData.product_price, orderData.loan_amount, orderData.selected_term_months, orderData.remaining_balance, orderData.order_status, orderData.next_payment_due_date, orderData.order_timestamp ];
         const [orderResult] = await connection.query(orderSql, orderValues);
         const orderId = orderResult.insertId;
         console.log(`✅ BNPL Order (ID: ${orderId}) record created.`);

@@ -1,0 +1,143 @@
+/* src/components/Repayment.css */
+
+/* Inherit base container styles if applicable */
+.repayment-container {
+    /* Styles from .container in Form.css */
+    /* display: flex; */ /* Already default for container */
+    /* justify-content: center; */
+    /* align-items: center; */ /* Maybe align-items: flex-start for scrolling */
+    /* height: 100vh; */ /* Use min-height */
+    /* background: linear-gradient(200deg, #eff7f6, #F7D6E0); */ /* Keep gradient */
+    padding: 50px 20px;
+    box-sizing: border-box;
+  }
+  
+  .repayment-card {
+    /* Styles from .form-card */
+    background: white;
+    padding: 30px 40px; /* Adjust padding */
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    max-width: 650px; /* Adjust max width */
+    width: 100%;
+    /* text-align: center; Remove center align maybe? */
+  }
+  
+  .repayment-card h2 {
+    color: #252f3b;
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 30px;
+  }
+  
+  .loading-message {
+      text-align: center;
+      padding: 20px;
+      font-size: 1.1em;
+      margin-top: 20px;
+      color: #4a5568;
+  }
+  
+  /* Use same error style as form.css if defined, or define here */
+  .error-message {
+      text-align: center; padding: 12px; font-size: 0.95em; margin-top: 20px;
+      color: #842029; background-color: #f8d7da; border: 1px solid #f5c2c7; border-radius: 6px;
+  }
+  
+  
+  .order-list {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px; /* Space between order items */
+  }
+  
+  .order-item {
+      border: 1px solid #e2e8f0; /* Lighter border */
+      border-radius: 12px; /* More rounded */
+      padding: 15px 20px;
+      background-color: #fdfdff; /* Very light background */
+  }
+  
+  .order-item h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      color: #334155; /* Darker subheading */
+      font-size: 1.1em;
+  }
+  
+  .order-item p {
+      margin: 4px 0;
+      font-size: 0.95em;
+      color: #4a5568; /* Slightly muted text */
+      line-height: 1.4;
+  }
+  
+  .order-item .remaining-balance {
+      font-weight: bold;
+      color: #c82333; /* Match logout color maybe? */
+  }
+  
+  .repayment-action {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap; /* Wrap on smaller screens */
+  }
+  
+  .repayment-input { /* Style like form inputs */
+      display: block;
+      /* width: 100%; */ /* Don't make full width in flex */
+      flex-grow: 1; /* Allow it to grow */
+      max-width: 160px; /* Limit max size */
+      margin: 0; /* Reset margin */
+      padding: 10px 12px; /* Slightly smaller padding? */
+      border: 1px solid #ddd;
+      border-radius: 30px; /* Match form style */
+      box-sizing: border-box; /* Include padding in width */
+  }
+  
+  /* Use .btn for base repayment button style */
+  .repayment-button {
+      /* Inherits .btn styles: padding, border-radius, border, color, background, cursor */
+      flex-shrink: 0; /* Prevent button shrinking too much */
+  }
+  /* Override background if needed */
+  .repayment-button {
+      background: #0d6efd; /* Blue for payment */
+  }
+  .repayment-button:hover:not(:disabled) {
+      background: #0a58ca; /* Darker blue */
+  }
+  .repayment-button:disabled {
+       background: #cccccc !important; /* Grey out */
+       cursor: not-allowed;
+  }
+  
+  
+  /* Payment result messages */
+  .payment-success,
+  .payment-error {
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-top: 12px;
+      font-size: 0.9em;
+      text-align: center;
+  }
+  .payment-success {
+      color: #0f5132;
+      background-color: #d1e7dd;
+      border: 1px solid #badbcc;
+  }
+  .payment-error {
+      color: #842029;
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+  }
+  
+  /* Style back button like main .btn */
+  .back-button {
+      display: block;
+      margin: 40px auto 10px auto; /* Center & Spacing */
+  }

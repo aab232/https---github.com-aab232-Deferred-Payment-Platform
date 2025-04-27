@@ -253,7 +253,7 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
                 FROM credit_data WHERE user_id = ? ORDER BY recorded_at DESC LIMIT 1`;
             // Fetch needed user data fields from users table - ENSURE employment_status is fetched here if using fallback
             const userSql = `
-                SELECT cb_person_default_on_file, cb_person_cred_hist_length
+                SELECT employment_status AS user_employment_status, cb_person_default_on_file, cb_person_cred_hist_length
                 FROM users WHERE user_id = ?`;
             const [[latestCreditData], [dbUserData]] = await Promise.all([
                  dbPool.query(creditSql, [userId]),
@@ -492,7 +492,7 @@ app.post('/api/confirm_bnpl_order', authenticateUser, async (req, res) => {
         };
         // Use explicit column list for INSERT
         const orderSql = 'INSERT INTO orders (user_id, assessment_id, product_title, product_price, loan_amnt, selected_term_months, remaining_balance, order_status, next_payment_due_date, order_timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        const orderValues = [ orderData.user_id, orderData.assessment_id, orderData.product_title, orderData.product_price, orderData.loan_amnt, orderData.selected_term_months, orderData.remaining_balance, orderData.order_status, orderData.next_payment_due_date, orderData.order_timestamp ];
+        const orderValues = [ orderData.user_id, orderData.assessment_id, orderData.product_title, orderData.product_price, orderData.loan_amount, orderData.selected_term_months, orderData.remaining_balance, orderData.order_status, orderData.next_payment_due_date, orderData.order_timestamp ];
         const [orderResult] = await connection.query(orderSql, orderValues);
         const orderId = orderResult.insertId;
         console.log(`✅ BNPL Order (ID: ${orderId}) record created.`);

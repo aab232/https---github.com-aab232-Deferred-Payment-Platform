@@ -246,15 +246,9 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
         let rawFeaturesForModel = {};
         try {
             // Fetch required DB data concurrently
-            // Fetch latest credit_data record
-            const creditSql = `
-                SELECT employment_status, person_income, credit_utilization_ratio, payment_history,
-                       loan_term, loan_amnt AS original_loan_amount, loan_percent_income
-                FROM credit_data WHERE user_id = ? ORDER BY recorded_at DESC LIMIT 1`;
-            // Fetch needed user data fields from users table - ENSURE employment_status is fetched here if using fallback
-            const userSql = `
-                SELECT cb_person_default_on_file, cb_person_cred_hist_length
-                FROM users WHERE user_id = ?`;
+            const creditSql = `SELECT employment_status, person_income, credit_utilization_ratio, payment_history, loan_term, loan_amnt AS original_loan_amount, loan_percent_income FROM credit_data WHERE user_id = ? ORDER BY recorded_at DESC LIMIT 1`;
+            // Ensure ALL required columns for user are selected
+            const userSql = `SELECT cb_person_default_on_file, cb_person_cred_hist_length FROM users WHERE user_id = ?`;
             const [[latestCreditData], [dbUserData]] = await Promise.all([
                  dbPool.query(creditSql, [userId]),
                  dbPool.query(userSql, [userId])
@@ -263,7 +257,7 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
             if (!dbUserData) throw new Error("User profile data missing."); // User must exist if authenticated
 
             // Determine final values for features
-            // Prioritize income from latest credit snapshot if available
+            // Using income from creditData snapshot primarily
             const final_person_income = Number(creditData.person_income || 0);
             const final_loan_amnt = Number(requested_loan_amount || creditData.original_loan_amount || 0);
             const final_loan_term = Number(requested_loan_term || creditData.loan_term || 0);
@@ -278,12 +272,12 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
                 'person_income': final_person_income,
                 'cb_person_default_on_file': dbUserData.cb_person_default_on_file || 'N',
                 'cb_person_cred_hist_length': Number(dbUserData.cb_person_cred_hist_length || 0),
-                'original_loan_amount': Number(creditData.original_loan_amount || 0), // Use value from creditData (aliased from loan_amnt)
+                'original_loan_amount': Number(creditData.original_loan_amount || 0),
                 'loan_term': final_loan_term,
                 'loan_amnt': final_loan_amnt,
                 'credit_utilization_ratio': calculated_util_ratio_db,
                 'payment_history': calculated_payment_history_db,
-                'loan_percent_income': calculate_lpi(final_loan_amnt, final_person_income) ?? 1.0, // Recalculate, default high if needed
+                'loan_percent_income': calculate_lpi(final_loan_amnt, final_person_income) ?? 1.0,
             };
 
             // Final cleanup loop for nulls/NaNs/types
@@ -334,11 +328,9 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
 
                  // ---> ADDED: Update users table with the new limit <---
                  const updateUserLimitSql = `UPDATE users SET current_credit_limit = ? WHERE user_id = ?`;
-                 // Use the limit determined by the assessment
-                 const newLimit = entitlements.limit;
-                 const [updateUserResult] = await dbPool.query(updateUserLimitSql, [newLimit, userId]);
+                 const [updateUserResult] = await dbPool.query(updateUserLimitSql, [entitlements.limit, userId]);
                  if (updateUserResult.affectedRows > 0) {
-                     console.log(`      -> User ${userId} current_credit_limit updated to ${newLimit}.`);
+                     console.log(`      -> User ${userId} current_credit_limit updated to ${entitlements.limit}.`);
                  } else {
                       // This might happen if user was deleted between auth and here - log warning
                       console.warn(`      -> Failed to update current_credit_limit for User ${userId} (User not found?).`);
@@ -434,12 +426,10 @@ app.post('/api/confirm_bnpl_order', authenticateUser, async (req, res) => {
     console.log(`\n⚙️ Confirming BNPL order User: ${userId}, Product: ${product?.title}, Term: ${term}`);
 
     // 1. Validation
-    // Check product exists and has required properties
-    if (!product || typeof product !== 'object' || typeof product.numericPrice !== 'number' || isNaN(product.numericPrice) || !product.title || typeof term !== 'number' || term <= 0 ) {
-        console.error("Order confirmation failed: Invalid input data provided.", { product, term });
-        return res.status(400).json({ success: false, message: 'Missing or invalid order details (product, term).' });
+    if (!product?.numericPrice || !product?.title || typeof term !== 'number' || term <= 0 || isNaN(Number(product.numericPrice))) {
+        return res.status(400).json({ success: false, message: 'Missing or invalid order details.' });
     }
-    const orderAmount = Number(product.numericPrice); // Use validated numeric price
+    const orderAmount = Number(product.numericPrice); // Ensure it's a number
 
     try {
         // --- Get a connection from the pool for transaction ---
@@ -448,17 +438,15 @@ app.post('/api/confirm_bnpl_order', authenticateUser, async (req, res) => {
         console.log("   DB Transaction Started.");
         // --- --------------------------------------------- ---
 
-        // 2. Fetch User's Current Limit & Used Amount (Lock row for update)
+        // 2. Fetch User's Current Limit & Used Amount (LOCK a row for update if high concurrency needed)
+        // SELECT ... FOR UPDATE requires InnoDB and careful transaction handling
         const limitSql = 'SELECT current_credit_limit, used_credit_amount FROM users WHERE user_id = ? FOR UPDATE';
         const [limitResults] = await connection.query(limitSql, [userId]);
 
         if (limitResults.length === 0) {
-            // If authentication middleware passed, user *should* exist. This indicates a DB inconsistency.
-            console.error(`Critical Error: User ${userId} not found during order confirmation credit check.`);
-            throw new Error("User not found for credit check.");
+            throw new Error("User not found for credit check."); // Should not happen if authenticated
         }
         const userData = limitResults[0];
-        // Safely parse numbers, defaulting to 0 if null/undefined
         const currentLimit = parseFloat(userData.current_credit_limit || 0);
         const usedAmount = parseFloat(userData.used_credit_amount || 0);
         const availableCredit = currentLimit - usedAmount;
@@ -467,73 +455,65 @@ app.post('/api/confirm_bnpl_order', authenticateUser, async (req, res) => {
         // 3. Check if Order Amount Exceeds Available Credit
         if (orderAmount > availableCredit) {
             console.warn(`   Order Rejected: Amount ${orderAmount.toFixed(2)} exceeds available credit ${availableCredit.toFixed(2)}`);
-            await connection.rollback(); // Rollback transaction before returning
-            // connection will be released in finally block
+            await connection.rollback(); // Rollback transaction
+            connection.release();
             return res.status(400).json({ success: false, message: `Order amount (£${orderAmount.toFixed(2)}) exceeds your available credit limit (£${availableCredit.toFixed(2)}).` });
         }
         console.log(`   Credit limit sufficient. Proceeding with order.`);
 
         // 4. Insert Order into DB (if limit check passes)
-        // Calculate the first due date more robustly
         const now = new Date();
-        const firstDueDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, now.getUTCDate())).toISOString().split('T')[0]; // Approx 1 month later (UTC)
+        const firstDueDate = new Date(now.setMonth(now.getMonth() + 1)).toISOString().split('T')[0]; // Example: 1 month
 
         const orderData = {
             user_id: userId,
             assessment_id: assessmentId || null, // Link to assessment if available
             product_title: product.title,
             product_price: orderAmount, // Use validated number
-            loan_amnt: orderAmount,  
+            loan_amount: loanAmount,    // Use validated number
             selected_term_months: term,
-            remaining_balance: orderAmount, // Initial balance equals order amount
-            order_status: 'ACTIVE',         // Set initial status
+            remaining_balance: loanAmount, // Initial balance
+            order_status: 'ACTIVE', // Assuming active immediately
             next_payment_due_date: firstDueDate,
-            order_timestamp: new Date()      // Use current date object for timestamp
+            order_timestamp: new Date()
         };
-        // Use explicit column list for INSERT
-        const orderSql = 'INSERT INTO orders (user_id, assessment_id, product_title, product_price, loan_amnt, selected_term_months, remaining_balance, order_status, next_payment_due_date, order_timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        const orderValues = [ orderData.user_id, orderData.assessment_id, orderData.product_title, orderData.product_price, orderData.loan_amnt, orderData.selected_term_months, orderData.remaining_balance, orderData.order_status, orderData.next_payment_due_date, orderData.order_timestamp ];
-        const [orderResult] = await connection.query(orderSql, orderValues);
+        const orderSql = 'INSERT INTO orders SET ?';
+        const [orderResult] = await connection.query(orderSql, orderData);
         const orderId = orderResult.insertId;
         console.log(`✅ BNPL Order (ID: ${orderId}) record created.`);
 
         // 5. Update User's Used Credit Amount
         const updateUsedAmountSql = 'UPDATE users SET used_credit_amount = used_credit_amount + ? WHERE user_id = ?';
-        const [updateResult] = await connection.query(updateUsedAmountSql, [orderAmount, userId]); // *** CORRECTED: Use orderAmount ***
+        const [updateResult] = await connection.query(updateUsedAmountSql, [loanAmount, userId]);
         if (updateResult.affectedRows === 0) {
-             // This means the user_id wasn't found during update - indicates inconsistency
-             console.error(`CRITICAL: Failed to update used_credit_amount for User ${userId} after order ${orderId} creation.`);
-             throw new Error("Failed to update user credit usage. Order incomplete."); // Fail transaction
+             // This would be a serious inconsistency
+             throw new Error("Failed to update user's used credit amount after order creation.");
         }
-        console.log(`✅ User ID ${userId} used_credit_amount updated (+${orderAmount.toFixed(2)}).`);
+        console.log(`✅ User ID ${userId} used_credit_amount updated (+${loanAmount.toFixed(2)}).`);
 
         // --- Commit transaction ---
         await connection.commit();
         console.log("   DB Transaction Committed.");
         // --- ------------------- ---
 
-        // 6. Post-Order Logic
-        // TODO: Send email/notification to user
-        // TODO: Notify merchant system if needed
-        // TODO: If using real payment system for disbursement, trigger it here
+        // 6. TODO: Post-Order Logic (Notifications, etc.)
 
-        res.status(201).json({ success: true, message: 'Order confirmed successfully!', orderId: orderId });
+        res.status(201).json({ success: true, message: 'Order confirmed!', orderId: orderId });
 
     } catch (error) {
         console.error(`❌ Error confirming BNPL order for User ${userId}:`, error);
-        // --- Rollback transaction on ANY error ---
+        // --- Rollback transaction on error ---
         if (connection) {
-            try { await connection.rollback(); console.log("   DB Transaction Rolled Back due to error."); }
-            catch (rollbackError) { console.error("   Error during Rollback:", rollbackError); }
+            await connection.rollback();
+            console.log("   DB Transaction Rolled Back due to error.");
         }
-        // --- ---------------------------------- ---
-        // Send appropriate error message
-        res.status(500).json({ success: false, message: error.message || 'Failed to process your order.' });
+        // --- ----------------------------- ---
+        res.status(500).json({ success: false, message: 'Failed to process your order due to a server error.' });
     } finally {
         // --- ALWAYS release connection back to pool ---
         if (connection) {
-            try { connection.release(); console.log("   DB Connection Released."); }
-            catch (releaseError) { console.error("   Error releasing DB connection:", releaseError); }
+            connection.release();
+            console.log("   DB Connection Released.");
         }
         // --- -------------------------------------- ---
     }

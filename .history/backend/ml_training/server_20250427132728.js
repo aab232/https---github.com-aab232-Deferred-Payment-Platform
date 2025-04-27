@@ -246,15 +246,9 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
         let rawFeaturesForModel = {};
         try {
             // Fetch required DB data concurrently
-            // Fetch latest credit_data record
-            const creditSql = `
-                SELECT employment_status, person_income, credit_utilization_ratio, payment_history,
-                       loan_term, loan_amnt AS original_loan_amount, loan_percent_income
-                FROM credit_data WHERE user_id = ? ORDER BY recorded_at DESC LIMIT 1`;
-            // Fetch needed user data fields from users table - ENSURE employment_status is fetched here if using fallback
-            const userSql = `
-                SELECT cb_person_default_on_file, cb_person_cred_hist_length
-                FROM users WHERE user_id = ?`;
+            const creditSql = `SELECT employment_status, person_income, credit_utilization_ratio, payment_history, loan_term, loan_amnt AS original_loan_amount, loan_percent_income FROM credit_data WHERE user_id = ? ORDER BY recorded_at DESC LIMIT 1`;
+            // Ensure ALL required columns for user are selected
+            const userSql = `SELECT cb_person_default_on_file, cb_person_cred_hist_length FROM users WHERE user_id = ?`;
             const [[latestCreditData], [dbUserData]] = await Promise.all([
                  dbPool.query(creditSql, [userId]),
                  dbPool.query(userSql, [userId])
@@ -263,7 +257,7 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
             if (!dbUserData) throw new Error("User profile data missing."); // User must exist if authenticated
 
             // Determine final values for features
-            // Prioritize income from latest credit snapshot if available
+            // Using income from creditData snapshot primarily
             const final_person_income = Number(creditData.person_income || 0);
             const final_loan_amnt = Number(requested_loan_amount || creditData.original_loan_amount || 0);
             const final_loan_term = Number(requested_loan_term || creditData.loan_term || 0);
@@ -278,12 +272,12 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
                 'person_income': final_person_income,
                 'cb_person_default_on_file': dbUserData.cb_person_default_on_file || 'N',
                 'cb_person_cred_hist_length': Number(dbUserData.cb_person_cred_hist_length || 0),
-                'original_loan_amount': Number(creditData.original_loan_amount || 0), // Use value from creditData (aliased from loan_amnt)
+                'original_loan_amount': Number(creditData.original_loan_amount || 0),
                 'loan_term': final_loan_term,
                 'loan_amnt': final_loan_amnt,
                 'credit_utilization_ratio': calculated_util_ratio_db,
                 'payment_history': calculated_payment_history_db,
-                'loan_percent_income': calculate_lpi(final_loan_amnt, final_person_income) ?? 1.0, // Recalculate, default high if needed
+                'loan_percent_income': calculate_lpi(final_loan_amnt, final_person_income) ?? 1.0,
             };
 
             // Final cleanup loop for nulls/NaNs/types
@@ -334,11 +328,9 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
 
                  // ---> ADDED: Update users table with the new limit <---
                  const updateUserLimitSql = `UPDATE users SET current_credit_limit = ? WHERE user_id = ?`;
-                 // Use the limit determined by the assessment
-                 const newLimit = entitlements.limit;
-                 const [updateUserResult] = await dbPool.query(updateUserLimitSql, [newLimit, userId]);
+                 const [updateUserResult] = await dbPool.query(updateUserLimitSql, [entitlements.limit, userId]);
                  if (updateUserResult.affectedRows > 0) {
-                     console.log(`      -> User ${userId} current_credit_limit updated to ${newLimit}.`);
+                     console.log(`      -> User ${userId} current_credit_limit updated to ${entitlements.limit}.`);
                  } else {
                       // This might happen if user was deleted between auth and here - log warning
                       console.warn(`      -> Failed to update current_credit_limit for User ${userId} (User not found?).`);
@@ -492,7 +484,7 @@ app.post('/api/confirm_bnpl_order', authenticateUser, async (req, res) => {
         };
         // Use explicit column list for INSERT
         const orderSql = 'INSERT INTO orders (user_id, assessment_id, product_title, product_price, loan_amnt, selected_term_months, remaining_balance, order_status, next_payment_due_date, order_timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        const orderValues = [ orderData.user_id, orderData.assessment_id, orderData.product_title, orderData.product_price, orderData.loan_amnt, orderData.selected_term_months, orderData.remaining_balance, orderData.order_status, orderData.next_payment_due_date, orderData.order_timestamp ];
+        const orderValues = [ orderData.user_id, orderData.assessment_id, orderData.product_title, orderData.product_price, orderData.loan_amount, orderData.selected_term_months, orderData.remaining_balance, orderData.order_status, orderData.next_payment_due_date, orderData.order_timestamp ];
         const [orderResult] = await connection.query(orderSql, orderValues);
         const orderId = orderResult.insertId;
         console.log(`✅ BNPL Order (ID: ${orderId}) record created.`);

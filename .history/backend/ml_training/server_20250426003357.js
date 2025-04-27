@@ -233,28 +233,19 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
     const userId = req.user.id;
     console.log(`\n⚙️ Assessment request for User ID: ${userId} (ALWAYS USING DB-ONLY SIMULATION PATH)`);
     const { requested_loan_amount = null, requested_loan_term = null } = req.body;
-    let assessmentIdForOrder = null; // Will hold ID from credit_assessments table
-    let riskScore = null;
-    let entitlements = {}; // Will hold { tier, limit, terms, error? }
+    let assessmentIdForOrder = null; let riskScore = null; let entitlements = {};
 
     try {
-        // Step 1 & 2: Informational Check & Skip Plaid Fetch (No changes needed)
+        // Step 1 & 2: Informational Check & Skip Plaid Fetch
         console.log(`   1. Skipping token check & Plaid API calls (SIMULATION MODE).`);
 
         // Step 3: Prepare Features using ONLY DB Data
-        console.log(`   2. Preparing model features from DB...`); // Log step adjusted
+        console.log(`   2. Preparing model features from DB...`); // Renumbered log steps
         let rawFeaturesForModel = {};
         try {
             // Fetch required DB data concurrently
-            // Fetch latest credit_data record
-            const creditSql = `
-                SELECT employment_status, person_income, credit_utilization_ratio, payment_history,
-                       loan_term, loan_amnt AS original_loan_amount, loan_percent_income
-                FROM credit_data WHERE user_id = ? ORDER BY recorded_at DESC LIMIT 1`;
-            // Fetch needed user data fields from users table - ENSURE employment_status is fetched here if using fallback
-            const userSql = `
-                SELECT cb_person_default_on_file, cb_person_cred_hist_length
-                FROM users WHERE user_id = ?`;
+            const creditSql = `SELECT employment_status, person_income, credit_utilization_ratio, payment_history, loan_term, loan_amnt AS original_loan_amount, loan_percent_income FROM credit_data WHERE user_id = ? ORDER BY recorded_at DESC LIMIT 1`;
+            const userSql = `SELECT cb_person_default_on_file, cb_person_cred_hist_length FROM users WHERE user_id = ?`;
             const [[latestCreditData], [dbUserData]] = await Promise.all([
                  dbPool.query(creditSql, [userId]),
                  dbPool.query(userSql, [userId])
@@ -263,27 +254,28 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
             if (!dbUserData) throw new Error("User profile data missing."); // User must exist if authenticated
 
             // Determine final values for features
-            // Prioritize income from latest credit snapshot if available
-            const final_person_income = Number(creditData.person_income || 0);
+            const final_person_income = Number(creditData.person_income || 0); // Prioritize creditData for income snapshot
             const final_loan_amnt = Number(requested_loan_amount || creditData.original_loan_amount || 0);
             const final_loan_term = Number(requested_loan_term || creditData.loan_term || 0);
 
-            // Call calculation helpers (pass null for Plaid data, rely on DB fallbacks)
+            // Call calculation helpers (passing null for Plaid data, rely on DB fallbacks)
             const calculated_util_ratio_db = calculate_util_ratio(null, null, creditData.credit_utilization_ratio) ?? 0.1;
-            const calculated_payment_history_db = calculate_payment_history([], dbUserData, creditData.payment_history) ?? 500;
+            const calculated_payment_history_db = calculate_payment_history([], dbUserData, creditData.payment_history) ?? 500; // Pass dbUserData for default flag check
 
             // Assemble the features object matching Python script's expected keys
             rawFeaturesForModel = {
                 'employment_status': mapEmploymentStatus(creditData.employment_status || dbUserData.user_employment_status), // Map using latest snapshot or user profile
                 'person_income': final_person_income,
                 'cb_person_default_on_file': dbUserData.cb_person_default_on_file || 'N',
-                'cb_person_cred_hist_length': Number(dbUserData.cb_person_cred_hist_length || 0),
-                'original_loan_amount': Number(creditData.original_loan_amount || 0), // Use value from creditData (aliased from loan_amnt)
+                'cb_person_cred_hist_length': Number(dbUserData.cb_person_cred_hist_length || 0), // Use value from users table
+
+                'original_loan_amount': Number(creditData.original_loan_amount || 0), // From credit data alias
                 'loan_term': final_loan_term,
                 'loan_amnt': final_loan_amnt,
+
                 'credit_utilization_ratio': calculated_util_ratio_db,
                 'payment_history': calculated_payment_history_db,
-                'loan_percent_income': calculate_lpi(final_loan_amnt, final_person_income) ?? 1.0, // Recalculate, default high if needed
+                'loan_percent_income': calculate_lpi(final_loan_amnt, final_person_income) ?? 1.0, // Default high LPI if needed
             };
 
             // Final cleanup loop for nulls/NaNs/types
@@ -297,16 +289,15 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
                      if (key === 'cb_person_default_on_file') rawFeaturesForModel[key] = 'N';
                 }
             });
-            console.log(`✅ Raw features prepared (DB ONLY):`, JSON.stringify(rawFeaturesForModel));
+            console.log(`✅ Raw features prepared (DB ONLY):`, JSON.stringify(rawFeaturesForModel, null, 2));
 
         } catch (dataPrepError) {
              console.error(`❌ Error preparing features (DB) for User ${userId}:`, dataPrepError);
-             // Ensure response for this specific error
-             return res.status(500).json({ success: false, message: `Internal error preparing assessment data: ${dataPrepError.message}` });
+             return res.status(500).json({ success: false, message: 'Internal error preparing assessment data.' });
         }
 
         // 3. Call Python Service (Renumbered Step)
-        if (!PYTHON_PREDICTION_URL) return res.status(503).json({ success: false, message: 'Assessment service configuration error.' });
+        if (!PYTHON_PREDICTION_URL) return res.status(503).json({ success: false, message: 'Assessment config error.' });
         console.log(`   3. Calling Python prediction service...`);
         try {
              const predictionResponse = await fetch(PYTHON_PREDICTION_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ features: rawFeaturesForModel }) });
@@ -314,56 +305,24 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
              const predictionResult = await predictionResponse.json(); if (predictionResult.error) throw new Error(`Prediction service failed: ${predictionResult.error}`); riskScore = predictionResult.risk_score;
              console.log(`     Score: ${riskScore}`);
         } catch (fetchError) { console.error("Python Fetch Error:", fetchError); return res.status(503).json({ success: false, message: 'Assessment service unavailable.' }); }
-        if (riskScore === null || isNaN(Number(riskScore))) { console.error("Invalid score received from Python:", riskScore); return res.status(500).json({success: false, message: 'Invalid score received from assessment service.'});}
+        if (riskScore === null || isNaN(Number(riskScore))) return res.status(500).json({success: false, message: 'Invalid score received.'});
 
         // 4. Map Score (Renumbered Step)
         console.log(`   4. Mapping score ${riskScore}...`);
         entitlements = mapScoreToEntitlements(riskScore);
 
-        // 5. Store Assessment Result & Update User Limit (Renumbered Step)
-        console.log(`   5. Storing assessment result & updating user limit...`);
+        // 5. Store Assessment Result (Renumbered Step)
+        console.log(`   5. Storing assessment result...`);
         if (!entitlements.error) {
-             // Use a transaction potentially if both must succeed? For now, separate queries.
-             try {
-                 // Insert into history table
-                 const assessmentSql = `INSERT INTO credit_assessments (user_id, risk_score, credit_tier, credit_limit, calculated_terms, assessment_timestamp) VALUES (?, ?, ?, ?, ?, NOW())`;
-                 const termsJson = JSON.stringify(entitlements.terms||[]);
-                 const [insResult] = await dbPool.query(assessmentSql, [userId, riskScore, entitlements.tier, entitlements.limit, termsJson]);
-                 assessmentIdForOrder = insResult.insertId; // Capture ID
-                 console.log(`      -> Assessment record (ID: ${assessmentIdForOrder}) stored.`);
-
-                 // ---> ADDED: Update users table with the new limit <---
-                 const updateUserLimitSql = `UPDATE users SET current_credit_limit = ? WHERE user_id = ?`;
-                 // Use the limit determined by the assessment
-                 const newLimit = entitlements.limit;
-                 const [updateUserResult] = await dbPool.query(updateUserLimitSql, [newLimit, userId]);
-                 if (updateUserResult.affectedRows > 0) {
-                     console.log(`      -> User ${userId} current_credit_limit updated to ${newLimit}.`);
-                 } else {
-                      // This might happen if user was deleted between auth and here - log warning
-                      console.warn(`      -> Failed to update current_credit_limit for User ${userId} (User not found?).`);
-                 }
-                 // --->--------------------------------------------- <---
-
-             } catch (e) {
-                 console.error("   ❌ DB Error storing assessment or updating user limit:", e);
-                 // Log the error but maybe don't fail the entire request if user got entitlements?
-                 // Reset assessmentId if storage failed, as it won't be valid for the order
-                 assessmentIdForOrder = null;
-             }
-        } else { console.warn(`   ⚠️ Skipping storage/update: Invalid score/entitlement error.`); }
+             try { const sql = `INSERT INTO credit_assessments (user_id, risk_score, credit_tier, credit_limit, calculated_terms, assessment_timestamp) VALUES (?, ?, ?, ?, ?, NOW())`; const terms = JSON.stringify(entitlements.terms||[]); const [ins] = await dbPool.query(sql, [userId, riskScore, entitlements.tier, entitlements.limit, terms]); assessmentIdForOrder = ins.insertId; console.log(`      -> Record ${assessmentIdForOrder} stored.`); }
+             catch (e) { console.error("   ❌ DB Error storing assessment:", e); }
+        } else { console.warn(`   ⚠️ Skipping assessment storage due to invalid score/entitlement error.`); }
 
         // 6. Return Result (Renumbered Step)
         console.log(`✅ Assessment complete (DB ONLY) User: ${userId}.`);
-        // Return the entitlements from THIS assessment, and the assessmentId if it was successfully stored
         res.status(200).json({ success: true, entitlements, assessmentId: assessmentIdForOrder });
 
-    } catch (error) {
-         // Catch errors from steps 1, 2 (DB errors), 4 (mapping errors?), 7 (unexpected)
-         console.error(`❌ Overall Assessment Error (DB ONLY Path) for User ${userId}:`, error);
-         // Ensure a response is always sent
-         res.status(500).json({ success: false, message: error.message || 'Assessment failed.' });
-    }
+    } catch (error) { console.error(`❌ Overall Assessment Error (DB ONLY Path):`, error); res.status(500).json({ success: false, message: error.message || 'Assessment failed.' }); }
 });
 // --- ------------------------------------------------- ---
 
@@ -434,12 +393,10 @@ app.post('/api/confirm_bnpl_order', authenticateUser, async (req, res) => {
     console.log(`\n⚙️ Confirming BNPL order User: ${userId}, Product: ${product?.title}, Term: ${term}`);
 
     // 1. Validation
-    // Check product exists and has required properties
-    if (!product || typeof product !== 'object' || typeof product.numericPrice !== 'number' || isNaN(product.numericPrice) || !product.title || typeof term !== 'number' || term <= 0 ) {
-        console.error("Order confirmation failed: Invalid input data provided.", { product, term });
-        return res.status(400).json({ success: false, message: 'Missing or invalid order details (product, term).' });
+    if (!product?.numericPrice || !product?.title || typeof term !== 'number' || term <= 0 || isNaN(Number(product.numericPrice))) {
+        return res.status(400).json({ success: false, message: 'Missing or invalid order details.' });
     }
-    const orderAmount = Number(product.numericPrice); // Use validated numeric price
+    const orderAmount = Number(product.numericPrice); // Ensure it's a number
 
     try {
         // --- Get a connection from the pool for transaction ---
@@ -448,17 +405,15 @@ app.post('/api/confirm_bnpl_order', authenticateUser, async (req, res) => {
         console.log("   DB Transaction Started.");
         // --- --------------------------------------------- ---
 
-        // 2. Fetch User's Current Limit & Used Amount (Lock row for update)
+        // 2. Fetch User's Current Limit & Used Amount (LOCK a row for update if high concurrency needed)
+        // SELECT ... FOR UPDATE requires InnoDB and careful transaction handling
         const limitSql = 'SELECT current_credit_limit, used_credit_amount FROM users WHERE user_id = ? FOR UPDATE';
         const [limitResults] = await connection.query(limitSql, [userId]);
 
         if (limitResults.length === 0) {
-            // If authentication middleware passed, user *should* exist. This indicates a DB inconsistency.
-            console.error(`Critical Error: User ${userId} not found during order confirmation credit check.`);
-            throw new Error("User not found for credit check.");
+            throw new Error("User not found for credit check."); // Should not happen if authenticated
         }
         const userData = limitResults[0];
-        // Safely parse numbers, defaulting to 0 if null/undefined
         const currentLimit = parseFloat(userData.current_credit_limit || 0);
         const usedAmount = parseFloat(userData.used_credit_amount || 0);
         const availableCredit = currentLimit - usedAmount;
@@ -467,73 +422,66 @@ app.post('/api/confirm_bnpl_order', authenticateUser, async (req, res) => {
         // 3. Check if Order Amount Exceeds Available Credit
         if (orderAmount > availableCredit) {
             console.warn(`   Order Rejected: Amount ${orderAmount.toFixed(2)} exceeds available credit ${availableCredit.toFixed(2)}`);
-            await connection.rollback(); // Rollback transaction before returning
-            // connection will be released in finally block
+            await connection.rollback(); // Rollback transaction
+            connection.release();
             return res.status(400).json({ success: false, message: `Order amount (£${orderAmount.toFixed(2)}) exceeds your available credit limit (£${availableCredit.toFixed(2)}).` });
         }
         console.log(`   Credit limit sufficient. Proceeding with order.`);
 
         // 4. Insert Order into DB (if limit check passes)
-        // Calculate the first due date more robustly
+        // TODO: Calculate next_payment_due_date properly
         const now = new Date();
-        const firstDueDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, now.getUTCDate())).toISOString().split('T')[0]; // Approx 1 month later (UTC)
+        const firstDueDate = new Date(now.setMonth(now.getMonth() + 1)).toISOString().split('T')[0]; // Example: 1 month
 
         const orderData = {
             user_id: userId,
             assessment_id: assessmentId || null, // Link to assessment if available
             product_title: product.title,
             product_price: orderAmount, // Use validated number
-            loan_amnt: orderAmount,  
+            loan_amount: loanAmount,    // Use validated number
             selected_term_months: term,
-            remaining_balance: orderAmount, // Initial balance equals order amount
-            order_status: 'ACTIVE',         // Set initial status
+            remaining_balance: loanAmount, // Initial balance
+            order_status: 'ACTIVE', // Assuming active immediately
             next_payment_due_date: firstDueDate,
-            order_timestamp: new Date()      // Use current date object for timestamp
+            order_timestamp: new Date()
         };
-        // Use explicit column list for INSERT
-        const orderSql = 'INSERT INTO orders (user_id, assessment_id, product_title, product_price, loan_amnt, selected_term_months, remaining_balance, order_status, next_payment_due_date, order_timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        const orderValues = [ orderData.user_id, orderData.assessment_id, orderData.product_title, orderData.product_price, orderData.loan_amnt, orderData.selected_term_months, orderData.remaining_balance, orderData.order_status, orderData.next_payment_due_date, orderData.order_timestamp ];
-        const [orderResult] = await connection.query(orderSql, orderValues);
+        const orderSql = 'INSERT INTO orders SET ?';
+        const [orderResult] = await connection.query(orderSql, orderData);
         const orderId = orderResult.insertId;
         console.log(`✅ BNPL Order (ID: ${orderId}) record created.`);
 
         // 5. Update User's Used Credit Amount
         const updateUsedAmountSql = 'UPDATE users SET used_credit_amount = used_credit_amount + ? WHERE user_id = ?';
-        const [updateResult] = await connection.query(updateUsedAmountSql, [orderAmount, userId]); // *** CORRECTED: Use orderAmount ***
+        const [updateResult] = await connection.query(updateUsedAmountSql, [loanAmount, userId]);
         if (updateResult.affectedRows === 0) {
-             // This means the user_id wasn't found during update - indicates inconsistency
-             console.error(`CRITICAL: Failed to update used_credit_amount for User ${userId} after order ${orderId} creation.`);
-             throw new Error("Failed to update user credit usage. Order incomplete."); // Fail transaction
+             // This would be a serious inconsistency
+             throw new Error("Failed to update user's used credit amount after order creation.");
         }
-        console.log(`✅ User ID ${userId} used_credit_amount updated (+${orderAmount.toFixed(2)}).`);
+        console.log(`✅ User ID ${userId} used_credit_amount updated (+${loanAmount.toFixed(2)}).`);
 
         // --- Commit transaction ---
         await connection.commit();
         console.log("   DB Transaction Committed.");
         // --- ------------------- ---
 
-        // 6. Post-Order Logic
-        // TODO: Send email/notification to user
-        // TODO: Notify merchant system if needed
-        // TODO: If using real payment system for disbursement, trigger it here
+        // 6. TODO: Post-Order Logic (Notifications, etc.)
 
-        res.status(201).json({ success: true, message: 'Order confirmed successfully!', orderId: orderId });
+        res.status(201).json({ success: true, message: 'Order confirmed!', orderId: orderId });
 
     } catch (error) {
         console.error(`❌ Error confirming BNPL order for User ${userId}:`, error);
-        // --- Rollback transaction on ANY error ---
+        // --- Rollback transaction on error ---
         if (connection) {
-            try { await connection.rollback(); console.log("   DB Transaction Rolled Back due to error."); }
-            catch (rollbackError) { console.error("   Error during Rollback:", rollbackError); }
+            await connection.rollback();
+            console.log("   DB Transaction Rolled Back due to error.");
         }
-        // --- ---------------------------------- ---
-        // Send appropriate error message
-        res.status(500).json({ success: false, message: error.message || 'Failed to process your order.' });
+        // --- ----------------------------- ---
+        res.status(500).json({ success: false, message: 'Failed to process your order due to a server error.' });
     } finally {
         // --- ALWAYS release connection back to pool ---
         if (connection) {
-            try { connection.release(); console.log("   DB Connection Released."); }
-            catch (releaseError) { console.error("   Error releasing DB connection:", releaseError); }
+            connection.release();
+            console.log("   DB Connection Released.");
         }
         // --- -------------------------------------- ---
     }
@@ -581,16 +529,17 @@ app.get('/api/active_orders', authenticateUser, async (req, res) => {
 });
 // --- ----------------------------------------- ---
 
-// --- NEW Endpoint: Make Repayment (Corrected Logic) ---
+// --- NEW Endpoint: Make Repayment (Basic Structure) ---
 app.post('/api/make_repayment', authenticateUser, async (req, res) => {
     const userId = req.user.id;
+    // Frontend needs to send order_id and repayment_amount
     const { order_id, repayment_amount } = req.body;
     let connection = null;
 
     console.log(`\n⚙️ Processing Repayment for Order ID: ${order_id}, Amount: ${repayment_amount}, User ID: ${userId}`);
 
     // 1. Validation
-    const amount = Number(repayment_amount); // Use Number() for consistency
+    const amount = Number(repayment_amount);
     const orderIdInt = parseInt(order_id, 10);
     if (isNaN(amount) || amount <= 0 || isNaN(orderIdInt)) {
         return res.status(400).json({ success: false, message: 'Invalid order ID or repayment amount.' });
@@ -601,54 +550,52 @@ app.post('/api/make_repayment', authenticateUser, async (req, res) => {
         await connection.beginTransaction();
         console.log("   Repayment DB Transaction Started.");
 
-        // 2. Get current order details AND user's used amount (lock rows for update)
+        // 2. Get current order details (and lock row)
         const getOrderSql = 'SELECT user_id, remaining_balance, order_status FROM orders WHERE order_id = ? FOR UPDATE';
-        const getUserSql = 'SELECT used_credit_amount FROM users WHERE user_id = ? FOR UPDATE';
+        const [orderResults] = await connection.query(getOrderSql, [orderIdInt]);
 
-        const [[order], [user]] = await Promise.all([ // Destructure results correctly
-            connection.query(getOrderSql, [orderIdInt]),
-            connection.query(getUserSql, [userId])
-        ]);
-
-        if (!order) throw new Error(`Order ID ${orderIdInt} not found.`);
-        if (!user) throw new Error(`User ID ${userId} not found for repayment update.`); // Should not happen if authenticated
+        if (orderResults.length === 0) {
+            throw new Error(`Order ID ${orderIdInt} not found.`);
+        }
+        const order = orderResults[0];
 
         // 3. Authorization/Validation Checks
-        if (order.user_id !== userId) throw new Error("User does not own this order.");
-        if (order.order_status !== 'ACTIVE') throw new Error(`Cannot make repayment for order status: ${order.order_status}.`);
-
+        if (order.user_id !== userId) {
+             throw new Error("User does not own this order."); // Security check
+        }
+        if (order.order_status !== 'ACTIVE') {
+             throw new Error(`Cannot make repayment for order with status: ${order.order_status}.`);
+        }
         const currentBalance = parseFloat(order.remaining_balance);
-        const currentUsedAmount = parseFloat(user.used_credit_amount); // Get user's current used amount
+        if (amount > currentBalance) {
+            // Allow overpayment? Or reject? For simplicity, reject.
+             throw new Error(`Repayment amount (£${amount.toFixed(2)}) exceeds remaining balance (£${currentBalance.toFixed(2)}).`);
+        }
 
-        if (amount > currentBalance) throw new Error(`Repayment (£${amount.toFixed(2)}) exceeds balance (£${currentBalance.toFixed(2)}).`);
-
-        // --- Placeholder for Real Payment Processing ---
+        // If payment succeeds: proceed; If payment fails: rollback and return error
         console.log("   *** Skipping real payment processing - Placeholder ***");
-        const paymentSuccessful = true;
-        if (!paymentSuccessful) throw new Error("Payment processing failed.");
-        // --- ------------------------------------- ---
+        const paymentSuccessful = true; // Assume success for now
+        // --- ------------------------------------------ ---
 
-
-        // --- Perform DB Updates within Transaction ---
+        if (!paymentSuccessful) {
+            throw new Error("Payment processing failed.");
+        }
 
         // 4. Update Order Remaining Balance
         const newBalance = currentBalance - amount;
-        const newStatus = (newBalance <= 0.005) ? 'PAID_OFF' : 'ACTIVE'; // Use small tolerance for float comparison
+        const newStatus = (newBalance <= 0) ? 'PAID_OFF' : 'ACTIVE'; // Check if paid off
+        // TODO: Update next_payment_due_date if still ACTIVE?
         const updateOrderSql = 'UPDATE orders SET remaining_balance = ?, order_status = ? WHERE order_id = ?';
         await connection.query(updateOrderSql, [newBalance.toFixed(2), newStatus, orderIdInt]);
         console.log(`   Order ${orderIdInt} updated. New Balance: ${newBalance.toFixed(2)}, New Status: ${newStatus}`);
 
-        // 5. Update User's Used Credit Amount (Safely)
-        // Calculate the actual amount to decrease user's used amount by, ensuring it doesn't go negative
-        const amountToDecrease = Math.min(amount, currentUsedAmount); // Cannot decrease by more than what's currently used
-        if(amountToDecrease < amount) {
-            console.warn(`   Adjusted decrease amount from ${amount} to ${amountToDecrease} to prevent negative used_credit_amount.`);
-        }
+        // 5. Update User's Used Credit Amount
         const updateUserSql = 'UPDATE users SET used_credit_amount = used_credit_amount - ? WHERE user_id = ?';
-        await connection.query(updateUserSql, [amountToDecrease.toFixed(2), userId]); // Use the capped amount
-        console.log(`   User ${userId} used_credit_amount updated (-${amountToDecrease.toFixed(2)}).`);
-
-        // ---- End DB Updates ----
+        // Ensure used amount doesn't go below zero
+        const amountToDecrease = Math.min(amount, usedAmountFromUserCheck); // Need user's used amount here for safety
+        // TODO: Fetch user's current used_credit_amount before updating to prevent race conditions if needed
+        await connection.query(updateUserSql, [amount.toFixed(2), userId]); // Subtract payment amount
+        console.log(`   User ${userId} used_credit_amount updated (-${amount.toFixed(2)}).`);
 
 
         await connection.commit();
