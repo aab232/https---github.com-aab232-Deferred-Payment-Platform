@@ -1,0 +1,120 @@
+/* src/components/Basket.css */
+
+/* Inherit general container/card styles if needed */
+.basket-container {}
+.basket-card {} /* Maybe slightly wider than form-card */
+
+.basket-items {
+    margin-top: 20px;
+    margin-bottom: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Space between items */
+}
+
+.basket-item {
+    display: grid;
+    grid-template-columns: 1fr auto auto; /* Info | Actions | Subtotal */
+    gap: 15px;
+    align-items: center;
+    border: 1px solid #eee;
+    padding: 15px;
+    border-radius: 8px;
+    background-color: #fdfdff;
+}
+
+.item-info h4 {
+    margin: 0 0 5px 0;
+    font-size: 1.05em;
+    color: #333;
+}
+
+.item-price {
+    margin: 0;
+    font-size: 0.95em;
+    color: #555;
+}
+
+.item-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-self: center; /* Center actions column */
+}
+
+.item-actions label {
+     font-size: 0.9em;
+     color: #555;
+}
+
+.quantity-input {
+    width: 60px; /* Fixed small width */
+    padding: 5px 8px;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    /* Remove default number arrows if desired */
+    -moz-appearance: textfield;
+}
+.quantity-input::-webkit-outer-spin-button,
+.quantity-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+
+.remove-button {
+    background: none;
+    border: none;
+    color: #dc3545; /* Red */
+    font-size: 1.3em;
+    cursor: pointer;
+    padding: 2px;
+    line-height: 1;
+    transition: color 0.2s ease;
+}
+.remove-button:hover {
+    color: #a41b34;
+}
+
+.item-total {
+    font-weight: bold;
+    text-align: right;
+    justify-self: end; /* Align to the right */
+}
+
+.basket-summary {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #eee;
+    text-align: right;
+}
+
+.basket-summary p {
+     margin: 5px 0;
+     color: #555;
+}
+.basket-summary h3 {
+    margin: 10px 0;
+    color: #333;
+    font-size: 1.3em;
+}
+
+.checkout-button {
+    margin-top: 15px !important;
+     /* Add primary button styles */
+     background-color: #0f5132;
+     color: white;
+}
+.checkout-button:hover:not(:disabled) {
+    background-color: #0f5132;
+}
+.checkout-button:disabled {
+     background-color: #cccccc !important;
+     cursor: not-allowed;
+     opacity: 0.6;
+}
+
+.back-button {
+    /* ... */
+}

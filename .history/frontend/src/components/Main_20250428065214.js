@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Main.css';
+import { useBasket } from '../context/BasketContext';
 
 const mockProducts = [
     // --- Add unique IDs if your actual data has them ---
@@ -72,6 +73,7 @@ const Main = () => {
     const [selectedTerm, setSelectedTerm] = useState(null);
     const [orderLoading, setOrderLoading] = useState(false);
 
+    const { addToBasket } = useBasket();
     const navigate = useNavigate();
 
     // --- Effect for Filtering and Sorting ---
@@ -172,6 +174,15 @@ const Main = () => {
         } else {
             console.error("Order Confirmation API call failed:", resultData);
             alert(`Order could not be confirmed: ${resultData.message || 'Please try again.'}`);
+        }
+    };
+
+    const handleAddToBasket = () => {
+        if (selectedProduct) {
+            addToBasket(selectedProduct);
+            // Show a brief confirmation message?
+            alert(`${selectedProduct.title} added to basket!`);
+            closeModal();
         }
     };
 

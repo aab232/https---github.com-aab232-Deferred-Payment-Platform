@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Main.css';
+import { useBasket } from '../context/BasketContext';
 
 const mockProducts = [
     // --- Add unique IDs if your actual data has them ---
@@ -72,6 +73,7 @@ const Main = () => {
     const [selectedTerm, setSelectedTerm] = useState(null);
     const [orderLoading, setOrderLoading] = useState(false);
 
+    const { addToBasket } = useBasket();
     const navigate = useNavigate();
 
     // --- Effect for Filtering and Sorting ---
@@ -175,8 +177,16 @@ const Main = () => {
         }
     };
 
+    const handleAddToBasket = () => {
+        if (selectedProduct) {
+            addToBasket(selectedProduct);
+            // Show a brief confirmation message?
+            alert(`${selectedProduct.title} added to basket!`);
+            closeModal();
+        }
+    };
 
-    // --- RETURN JSX ---
+
     return (
         <div className="main-container">
             {/* --- Navigation Taskbar --- */}
@@ -266,6 +276,15 @@ const Main = () => {
                             <button className="modal-action-button bnpl-button" onClick={handleBnplAssessment} disabled={assessmentLoading || orderLoading}>
                                 {assessmentLoading ? 'Assessing...' : 'Buy Now, Pay Later'}
                             </button>
+
+                            <button
+                            className="modal-action-button add-basket-button"
+                            style={{marginTop: '15px'}}
+                            disabled={assessmentLoading || orderLoading}
+                            onClick={handleAddToBasket} // <-- CALL new handler
+                        >
+                            Add to Basket
+                        </button>
 
                             {/* Assessment Feedback */}
                             {assessmentLoading && <p className="assessment-status">Checking eligibility...</p>}
