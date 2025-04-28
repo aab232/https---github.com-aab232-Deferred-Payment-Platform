@@ -1,0 +1,298 @@
+.main-container {
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; /* Modern font stack */
+  background-color: #f4f7f6; /* Optional: Light background for the whole page */
+  min-height: 100vh;
+}
+
+/* --- Taskbar --- */
+.taskbar {
+  display: flex;
+  justify-content: space-around;
+  background: #e8a6ba; /* Your theme color */
+  padding: 12px 10px; /* Slightly more padding */
+  color: white;
+  border-radius: 20px; /* More rounded */
+  margin-bottom: 30px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap; /* Allow tabs to wrap */
+  gap: 5px; /* Add gap when wrapping */
+}
+
+.tab {
+  cursor: pointer;
+  padding: 6px 12px;
+  font-weight: 500; /* Medium weight */
+  transition: background-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap; /* Prevent text wrapping inside tab */
+}
+.tab:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 15px;
+}
+
+.logout {
+  color: #fff; /* White logout text */
+  font-weight: bold;
+  background-color: #c82333; /* Distinct logout color */
+  border-radius: 15px;
+}
+.logout:hover {
+    background-color: #a41b34;
+}
+
+/* --- Page Heading --- */
+h1 {
+    text-align: center;
+    margin-top: 10px;
+    margin-bottom: 25px;
+    color: #252f3b; /* Dark heading color */
+    font-weight: 600;
+}
+
+/* --- Controls/Filters --- */
+.controls.filters {
+  display: flex;
+  gap: 20px; /* More space between elements */
+  align-items: center;
+  flex-wrap: wrap; /* Allow wrapping */
+  padding: 18px 20px;
+  background-color: #ffffff; /* White background */
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 35px;
+}
+
+.controls input[type="text"],
+.controls select {
+  padding: 10px 12px;
+  border: 1px solid #d1d5db; /* Lighter border */
+  border-radius: 6px;
+  font-size: 14px;
+  min-width: 150px; /* Ensure decent width */
+}
+.controls input[type="text"] {
+    flex-grow: 1; /* Allow search to take more space */
+    max-width: 300px;
+}
+.controls select {
+    cursor: pointer;
+}
+
+.price-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto; /* Push price filter to the right */
+}
+.price-filter label {
+    white-space: nowrap;
+    color: #4a5568;
+    font-size: 14px;
+}
+.price-filter input[type="range"] {
+    cursor: pointer;
+    width: 150px; /* Fixed width for slider */
+}
+
+/* --- Content Area --- */
+.content-area {
+  padding: 0 5px; /* Slight horizontal padding */
+}
+
+/* --- Products Grid --- */
+.products-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); /* Slightly larger cards */
+  gap: 25px;
+}
+
+.product-card {
+  border: 1px solid #e2e8f0; /* Lighter border */
+  padding: 20px;
+  cursor: pointer;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 150px; /* Minimum height */
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.product-title {
+    font-size: 1.05em; /* Slightly larger title */
+    font-weight: 600; /* Semibold */
+    margin: 0 0 10px 0;
+    color: #1e293b; /* Darker title */
+    line-height: 1.3;
+    min-height: 2.6em; /* Reserve space for two lines */
+    /* --- Text Truncation --- */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* -- Non-standard method (needed for multi-line) -- */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;       /* Limit to 2 lines */
+    -webkit-box-orient: vertical;
+    /* -- Standard property (Added this) -- */
+    line-clamp: 2;               /* Add this standard property */
+    /* --- -------------------- --- */
+}
+
+
+.product-price {
+    font-weight: bold;
+    color: #dd819a; /* Theme price color */
+    font-size: 1.1em;
+    margin: auto 0 0 0; /* Push to bottom, use auto for top margin */
+    padding-top: 10px; /* Space above price */
+    align-self: flex-start; /* Align price left */
+}
+
+
+/* --- Load More Button --- */
+.load-more-button {
+    display: block;
+    margin: 40px auto; /* More spacing */
+    padding: 12px 30px;
+    font-size: 1em;
+    font-weight: 500;
+    cursor: pointer;
+    background-color: #e8a6ba; /* Theme color */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.load-more-button:hover:not(:disabled) { /* Added :not(:disabled) */
+    background-color: #d190a4;
+    transform: translateY(-1px);
+}
+.load-more-button:disabled {
+    background-color: #e9ecef;
+    color: #adb5bd;
+    cursor: not-allowed;
+    transform: none; /* No hover effect when disabled */
+}
+
+/* --- Modal Styles --- */
+.product-modal-backdrop {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.65); /* Darker backdrop */
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1050; cursor: pointer; padding: 20px; box-sizing: border-box;
+  /* Add animation */
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.modal-content {
+  background: white; padding: 30px 35px; /* More padding */
+  max-width: 550px; width: 100%; /* Responsive max width */
+  border-radius: 16px; /* More rounded */
+  position: relative; cursor: default; box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  max-height: 90vh; overflow-y: auto;
+  text-align: center;
+   /* Add animation */
+   animation: slideIn 0.4s ease-out forwards;
+   opacity: 0; /* Start hidden for animation */
+   transform: translateY(-20px); /* Start slightly above for animation */
+}
+
+/* Keyframe animations */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+
+.close-button {
+  cursor: pointer; font-size: 2em; position: absolute;
+  top: 10px; right: 15px; color: #adb5bd; background: none;
+  border: none; line-height: 1; padding: 0;
+  transition: color 0.2s ease;
+}
+.close-button:hover { color: #343a40; }
+
+.modal-content h2 { margin-top: 0; margin-bottom: 15px; color: #1e293b; font-size: 1.6em;}
+.modal-price { font-size: 1.4em; font-weight: bold; color: #dd819a; margin-bottom: 25px;}
+
+/* Modal Action Button Base Style */
+.modal-action-button {
+    margin: 8px 5px; /* Add some vertical margin */
+    display: inline-block; padding: 12px 25px; /* Larger buttons */
+    font-size: 1em; font-weight: 500;
+    border: none; border-radius: 8px; /* Rounded buttons */
+    cursor: pointer; text-decoration: none; color: white;
+    transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
+    min-width: 140px; /* Minimum width */
+    text-align: center;
+}
+.modal-action-button:hover:not(:disabled) {
+     transform: translateY(-1px); /* Subtle lift on hover */
+     filter: brightness(1.1); /* Slight brighten */
+}
+.modal-action-button:disabled {
+    background-color: #cccccc !important; /* Important to override specific styles */
+    color: #777 !important;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Specific Button Styles */
+.bnpl-button { background-color: #e8a6ba; color: #333; font-weight: 600; }
+.bnpl-button:hover:not(:disabled) { background-color: #e8a6ba; }
+
+.add-basket-button { background-color: #6c757d; }
+.add-basket-button:hover:not(:disabled) { background-color: #5a6268; }
+
+.proceed-button { background-color: #0f5132; display: block; margin: 20px auto 10px auto; }
+.proceed-button:hover:not(:disabled) { background-color: #0f5132; }
+
+
+/* BNPL Section & Results */
+.bnpl-section { margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee; }
+
+.assessment-status { font-style: italic; color: #666; margin-top: 15px; min-height: 1.5em; /* Prevent layout shift */}
+
+.assessment-error {
+    color: #842029; font-weight: 500; margin-top: 15px;
+    border: 1px solid #f5c2c7; background-color: #f8d7da;
+    padding: 12px; border-radius: 6px;
+}
+
+.assessment-results { margin-top: 15px; padding: 18px; background-color: #ffc8d8; border: 1px solid #ffc8d8; border-radius: 8px; text-align: left; } /* Light blue background */
+.assessment-results h4 { margin-top: 0; margin-bottom: 15px; color: #333; text-align: center; font-size: 1.1em;} /* Darker blue heading */
+.assessment-approved { color: #0f5132; font-weight: bold; margin-bottom: 10px; font-size: 1.05em; text-align: center;} /* Green for approved */
+.assessment-partial { color: #664d03; font-weight: 500; margin-bottom: 10px; background-color: #fff3cd; border: 1px solid #ffe69c; padding: 10px; border-radius: 6px;} /* Yellow warning style */
+.term-selection { display: flex; justify-content: center; gap: 10px; margin: 15px 0 20px 0; flex-wrap: wrap; }
+.term-button { padding: 8px 16px; cursor: pointer; border: 1px solid #ced4da; border-radius: 20px; background-color: #bcbcbc; transition: all 0.2s ease; font-size: 0.95em; }
+.term-button:hover { background-color: #e8a6ba; border-color: #bbb; }
+.term-button.selected { background-color: #e8a6ba; color: #333; border-color: #e8a6ba; font-weight: bold; transform: scale(1.05); } /* Highlight selected */
+.assessment-note { font-size: 0.9em; color: #6c757d; margin-top: 20px; text-align: center; }
+.link-lookalike { color: #0d6efd; text-decoration: underline; cursor: pointer; }
+.link-lookalike:hover { color: #0a58ca; }
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .controls.filters { flex-direction: column; align-items: stretch; }
+    .price-filter { margin-left: 0; width: 100%; }
+    .price-filter input[type="range"] { width: auto; flex-grow: 1; }
+    .products-container { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+    .product-card { padding: 15px; }
+    .modal-content { padding: 25px 20px; } /* Adjust modal padding */
+}
+
+@media (max-width: 480px) {
+    .products-container { grid-template-columns: 1fr; /* Single column */ }
+    .taskbar { flex-wrap: wrap; justify-content: center; gap: 5px; padding: 10px 5px;}
+    .tab { padding: 4px 8px; font-size: 0.9em; }
+    .modal-content h2 { font-size: 1.4em; }
+    .modal-price { font-size: 1.2em; }
+    .modal-action-button { width: 100%; margin: 6px 0; } /* Stack buttons */
+    .term-selection { gap: 8px; }
+    .term-button { padding: 6px 12px; font-size: 0.9em; }
+}
