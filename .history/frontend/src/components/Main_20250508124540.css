@@ -1,29 +1,30 @@
 .main-container {
   padding: 20px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; /* Modern font stack */
-  background-color: #f4f7f6;
+  background-color: #f4f7f6; /* Optional: Light background for the whole page */
   min-height: 100vh;
 }
 
+/* --- Taskbar --- */
 .taskbar {
   display: flex;
   justify-content: space-around;
-  background: #e8a6ba;
-  padding: 12px 10px;
+  background: #e8a6ba; /* Your theme color */
+  padding: 12px 10px; /* Slightly more padding */
   color: white;
-  border-radius: 20px;
+  border-radius: 20px; /* More rounded */
   margin-bottom: 30px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  flex-wrap: wrap;
-  gap: 5px;
+  flex-wrap: wrap; /* Allow tabs to wrap */
+  gap: 5px; /* Add gap when wrapping */
 }
 
 .tab {
   cursor: pointer;
   padding: 6px 12px;
-  font-weight: 500;
+  font-weight: 500; /* Medium weight */
   transition: background-color 0.2s ease, color 0.2s ease;
-  white-space: nowrap;
+  white-space: nowrap; /* Prevent text wrapping inside tab */
 }
 .tab:hover {
     background-color: rgba(255, 255, 255, 0.15);
@@ -31,30 +32,32 @@
 }
 
 .logout {
-  color: #fff;
+  color: #fff; /* White logout text */
   font-weight: bold;
-  background-color: #c82333;
+  background-color: #c82333; /* Distinct logout color */
   border-radius: 15px;
 }
 .logout:hover {
     background-color: #a41b34;
 }
 
+/* --- Page Heading --- */
 h1 {
     text-align: center;
     margin-top: 10px;
     margin-bottom: 25px;
-    color: #252f3b;
+    color: #252f3b; /* Dark heading color */
     font-weight: 600;
 }
 
+/* --- Controls/Filters --- */
 .controls.filters {
   display: flex;
-  gap: 20px;
+  gap: 20px; /* More space between elements */
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: wrap; /* Allow wrapping */
   padding: 18px 20px;
-  background-color: #ffffff;
+  background-color: #ffffff; /* White background */
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   margin-bottom: 35px;
@@ -63,13 +66,13 @@ h1 {
 .controls input[type="text"],
 .controls select {
   padding: 10px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #d1d5db; /* Lighter border */
   border-radius: 6px;
   font-size: 14px;
-  min-width: 150px;
+  min-width: 150px; /* Ensure decent width */
 }
 .controls input[type="text"] {
-    flex-grow: 1;
+    flex-grow: 1; /* Allow search to take more space */
     max-width: 300px;
 }
 .controls select {
@@ -80,7 +83,7 @@ h1 {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-left: auto;
+  margin-left: auto; /* Push price filter to the right */
 }
 .price-filter label {
     white-space: nowrap;
@@ -89,23 +92,23 @@ h1 {
 }
 .price-filter input[type="range"] {
     cursor: pointer;
-    width: 150px;
+    width: 150px; /* Fixed width for slider */
 }
 
 /* --- Content Area --- */
 .content-area {
-  padding: 0 5px;
+  padding: 0 5px; /* Slight horizontal padding */
 }
 
 /* --- Products Grid --- */
 .products-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); /* Slightly larger cards */
   gap: 25px;
 }
 
 .product-card {
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e2e8f0; /* Lighter border */
   padding: 20px;
   cursor: pointer;
   background-color: white;
@@ -115,7 +118,7 @@ h1 {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 150px;
+  min-height: 150px; /* Minimum height */
 }
 
 .product-card:hover {
@@ -124,50 +127,50 @@ h1 {
 }
 
 .product-title {
-    font-size: 1.05em;
-    font-weight: 600;
+    font-size: 1.05em; /* Slightly larger title */
+    font-weight: 600; /* Semibold */
     margin: 0 0 10px 0;
-    color: #1e293b;
+    color: #1e293b; /* Darker title */
     line-height: 1.3;
-    min-height: 2.6em;
+    min-height: 2.6em; /* Reserve space for two lines */
     /* --- Text Truncation --- */
     overflow: hidden;
     text-overflow: ellipsis;
     /* -- Non-standard method (needed for multi-line) -- */
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 2;       /* Limit to 2 lines */
     -webkit-box-orient: vertical;
     /* -- Standard property (Added this) -- */
-    line-clamp: 2;
+    line-clamp: 2;               /* Add this standard property */
     /* --- -------------------- --- */
 }
 
 
 .product-price {
     font-weight: bold;
-    color: #dd819a;
+    color: #dd819a; /* Theme price color */
     font-size: 1.1em;
-    margin: auto 0 0 0;
-    padding-top: 10px;
-    align-self: flex-start;
+    margin: auto 0 0 0; /* Push to bottom, use auto for top margin */
+    padding-top: 10px; /* Space above price */
+    align-self: flex-start; /* Align price left */
 }
 
 
 /* --- Load More Button --- */
 .load-more-button {
     display: block;
-    margin: 40px auto;
+    margin: 40px auto; /* More spacing */
     padding: 12px 30px;
     font-size: 1em;
     font-weight: 500;
     cursor: pointer;
-    background-color: #e8a6ba;
+    background-color: #e8a6ba; /* Theme color */
     color: white;
     border: none;
     border-radius: 8px;
     transition: background-color 0.2s ease, transform 0.1s ease;
 }
-.load-more-button:hover:not(:disabled) { 
+.load-more-button:hover:not(:disabled) { /* Added :not(:disabled) */
     background-color: #d190a4;
     transform: translateY(-1px);
 }
@@ -175,29 +178,30 @@ h1 {
     background-color: #e9ecef;
     color: #adb5bd;
     cursor: not-allowed;
-    transform: none;
+    transform: none; /* No hover effect when disabled */
 }
 
 /* --- Modal Styles --- */
 .product-modal-backdrop {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.65); /* Darker backdrop */
   display: flex; justify-content: center; align-items: center;
   z-index: 1050; cursor: pointer; padding: 20px; box-sizing: border-box;
+  /* Add animation */
   animation: fadeIn 0.3s ease-out forwards;
 }
 
 .modal-content {
-  background: white; 
-  padding: 30px 35px;
-  max-width: 550px; width: 100%;
-  border-radius: 16px;
+  background: white; padding: 30px 35px; /* More padding */
+  max-width: 550px; width: 100%; /* Responsive max width */
+  border-radius: 16px; /* More rounded */
   position: relative; cursor: default; box-shadow: 0 8px 30px rgba(0,0,0,0.25);
   max-height: 90vh; overflow-y: auto;
   text-align: center;
+   /* Add animation */
    animation: slideIn 0.4s ease-out forwards;
-   opacity: 0;
-   transform: translateY(-20px);
+   opacity: 0; /* Start hidden for animation */
+   transform: translateY(-20px); /* Start slightly above for animation */
 }
 
 /* Keyframe animations */
@@ -206,14 +210,9 @@ h1 {
 
 
 .close-button {
-  cursor: pointer; 
-  font-size: 2em; 
-  position: absolute;
-  top: 10px; right: 15px; 
-  color: #adb5bd; background: none;
-  border: none; 
-  line-height: 1; 
-  padding: 0;
+  cursor: pointer; font-size: 2em; position: absolute;
+  top: 10px; right: 15px; color: #adb5bd; background: none;
+  border: none; line-height: 1; padding: 0;
   transition: color 0.2s ease;
 }
 .close-button:hover { color: #343a40; }
@@ -223,21 +222,21 @@ h1 {
 
 /* Modal Action Button Base Style */
 .modal-action-button {
-    margin: 8px 5px;
-    display: inline-block; padding: 12px 25px;
+    margin: 8px 5px; /* Add some vertical margin */
+    display: inline-block; padding: 12px 25px; /* Larger buttons */
     font-size: 1em; font-weight: 500;
-    border: none; border-radius: 8px;
+    border: none; border-radius: 8px; /* Rounded buttons */
     cursor: pointer; text-decoration: none; color: white;
     transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
-    min-width: 140px;
+    min-width: 140px; /* Minimum width */
     text-align: center;
 }
 .modal-action-button:hover:not(:disabled) {
-     transform: translateY(-1px);
-     filter: brightness(1.1);
+     transform: translateY(-1px); /* Subtle lift on hover */
+     filter: brightness(1.1); /* Slight brighten */
 }
 .modal-action-button:disabled {
-    background-color: #cccccc !important;
+    background-color: #cccccc !important; /* Important to override specific styles */
     color: #777 !important;
     cursor: not-allowed;
     opacity: 0.6;

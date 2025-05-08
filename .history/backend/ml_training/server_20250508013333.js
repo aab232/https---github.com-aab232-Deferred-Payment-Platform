@@ -61,7 +61,11 @@ try {
         database: process.env.DB_NAME || 'dpp_db',
         waitForConnections: true,
         queueLimit: 0
-    });
+    }); // .promise() is called on the pool instance itself typically, or it's used differently in mysql2/promise directly
+
+    // The .promise() wrapper is usually part of mysql2/promise, so direct queries should return promises.
+    // If using the base mysql2 and then calling .promise() on the pool:
+    // dbPool = mysql.createPool(...).promise(); <- This is one way if not importing from mysql2/promise
 
     // Test connection (async)
     dbPool.getConnection()
@@ -200,7 +204,7 @@ app.post('/register', async (req, res) => {
             first_name, surname, email, password: hashedPassword,
             phone_number: phone_number || null, ni_number: ni_number || null, date_of_birth: formattedDOB,
             cb_person_default_on_file: 'N', cb_person_cred_hist_length: 0,
-            current_credit_limit: 0.00, used_credit_amount: 0.00, buffer_bag_balance: 0.00
+            current_credit_limit: 0.00, used_credit_amount: 0.00, buffer_bag_balance: 0.00 // Added buffer_bag_balance
         };
         const sql = `INSERT INTO users (first_name, surname, email, password, phone_number, ni_number, date_of_birth, cb_person_default_on_file, cb_person_cred_hist_length, current_credit_limit, used_credit_amount, buffer_bag_balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         const values = [
@@ -261,7 +265,6 @@ app.post('/api/exchange_public_token', authenticateUser, async (req, res) => {
     } catch (dbError) { console.error(`❌ DB Error storing simulated Plaid tokens for User ID ${userId}:`, dbError); res.status(500).json({ success: false, message: 'Database error during simulated token storage.' }); }
 });
 
-// --- MAIN Credit Assessment Endpoint ---
 app.post('/api/assess_credit', authenticateUser, async (req, res) => {
     const userId = req.user.id;
     console.log(`\n⚙️ Starting Credit Assessment (SIMULATION MODE) for User: ${userId}`);
@@ -275,16 +278,16 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
         console.log(`   3. Preparing features from Database...`);
         try {
             const creditSql = `SELECT employment_status, person_income, credit_utilization_ratio, payment_history, loan_term, loan_amnt AS original_loan_amount, loan_percent_income FROM credit_data WHERE user_id = ? ORDER BY recorded_at DESC LIMIT 1`;
-            const userSql = `SELECT cb_person_default_on_file, cb_person_cred_hist_length FROM users WHERE user_id = ?`;
+            const userSql = `SELECT cb_person_default_on_file, cb_person_cred_hist_length FROM users WHERE user_id = ?`; // MODIFIED
             const [[latestCreditDataResult], [dbUserDataResult]] = await Promise.all([dbPool.query(creditSql, [userId]), dbPool.query(userSql, [userId])]);
             latestCreditData = latestCreditDataResult || {}; dbUserData = dbUserDataResult;
             if (!dbUserData) { console.error(`❌ User profile not found for User ID: ${userId}`); throw new Error("User profile data missing for assessment.");}
             console.log("      Fetched User Data:", dbUserData); console.log("      Fetched Latest Credit Data:", latestCreditData);
 
-            original_db_employment_status = latestCreditData.employment_status || 'OTHER';
+            original_db_employment_status = latestCreditData.employment_status || 'OTHER'; // MODIFIED
             raw_credit_utilization_ratio = latestCreditData.credit_utilization_ratio;
             db_default_flag = dbUserData.cb_person_default_on_file || 'N';
-            const pIncome = Number(latestCreditData.person_income || 0);
+            const pIncome = Number(latestCreditData.person_income || 0); // MODIFIED
             const lAmnt = Number(requested_loan_amount || latestCreditData.original_loan_amount || 1000);
             const lTerm = Number(requested_loan_term || latestCreditData.loan_term || 6);
             const utilRatio = calculate_util_ratio(null, null, raw_credit_utilization_ratio) ?? 0.1;
@@ -322,97 +325,41 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
             let connection;
             try {
                 connection = await dbPool.getConnection(); await connection.beginTransaction();
-                const assessSql = `INSERT INTO credit_assessments
-                                     (user_id, risk_score, credit_tier, credit_limit, calculated_terms,
-                                      assessment_timestamp)
-                                   VALUES (?, ?, ?, ?, ?, NOW())`;
-                const assessVals = [
-                    userId,
-                    riskScore.toFixed(6),
-                    entitlements.tier,
-                    entitlements.limit.toFixed(2),
-                    JSON.stringify(entitlements.terms),
-
-                ];
-                const [insRes] = await connection.query(assessSql, assessVals);
-                assessmentIdForOrder = insRes.insertId;
-                console.log(`      ✅ Assessment record created (ID: ${assessmentIdForOrder})`);
-
+                const assessSql = `INSERT INTO credit_assessments (user_id, risk_score, credit_tier, credit_limit, calculated_terms, assessment_status, assessment_timestamp, features_used) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)`;
+                const assessVals = [userId, riskScore.toFixed(6), entitlements.tier, entitlements.limit.toFixed(2), JSON.stringify(entitlements.terms), 'COMPLETED', JSON.stringify(rawFeaturesForModel)];
+                const [insRes] = await connection.query(assessSql, assessVals); assessmentIdForOrder = insRes.insertId; console.log(`      ✅ Assessment record created (ID: ${assessmentIdForOrder})`);
                 const updUserLimitSql = 'UPDATE users SET current_credit_limit = ? WHERE user_id = ?';
                 const [updRes] = await connection.query(updUserLimitSql, [entitlements.limit.toFixed(2), userId]);
-                if (updRes.affectedRows === 0) throw new Error("Failed to update user's credit limit."); // Fail transaction if update fails
+                if (updRes.affectedRows === 0) throw new Error("Failed to update user's credit limit.");
                 console.log(`      ✅ User ${userId}'s current_credit_limit updated to ${entitlements.limit.toFixed(2)}`);
-
-                await connection.commit();
-                console.log("      DB Transaction Committed (Assessment Record + User Limit Update).");
+                await connection.commit(); console.log("      DB Transaction Committed.");
             } catch (dbStoreError) {
                 console.error(`❌ DB Error during storage/update for User ${userId}:`, dbStoreError);
-                if (connection) {
-                    try { await connection.rollback(); console.log("      DB Transaction Rolled Back."); } // Added rollback logging
-                    catch (rollbackErr) { console.error("      Error during Rollback:", rollbackErr); }
-                }
-                assessmentIdForOrder = null; // Reset assessmentId as storage failed
-                console.error("Assessment result storage failed."); // Log the failure
-                // Decide whether to re-throw or allow the request to succeed without assessment ID
-                // Let's re-throw to make the failure clear in the outer catch
-                throw dbStoreError; // Re-throw the DB error
-            } finally {
-                if (connection) {
-                    try {
-                        connection.release();
-                        console.log("      DB Connection Released (Assessment Storage).");
-                    } catch (releaseErr) {
-                        console.error("      Error releasing DB connection (Assessment Storage):", releaseErr);
-                    }
-                }
-            }
-        } else {
-            console.warn(`   Skipping storage due to invalid score or entitlement error.`);
-        }
+                if (connection) await connection.rollback().catch(rbErr => console.error("Rollback Error:", rbErr));
+                assessmentIdForOrder = null; console.error("Assessment result storage failed.");
+            } finally { if (connection) connection.release().catch(relErr => console.error("Release Error:", relErr)); }
+        } else { console.warn(`   Skipping storage due to invalid score or entitlement error.`);}
 
-        // Only reach here if the storage/update succeeded OR was skipped due to score/entitlement error
         console.log(`✅ Assessment complete (SIMULATION MODE) for User: ${userId}`);
-        // Fetch user data again AFTER potential updates to get latest used_credit_amount for accurate available_credit response
-         const [currentUserDataForResponse] = await dbPool.query('SELECT used_credit_amount FROM users WHERE user_id = ?', [userId]);
-         const finalUsedAmount = parseFloat(currentUserDataForResponse[0]?.used_credit_amount || 0);
-
         res.status(200).json({
-            success: true,
-            message: "Credit assessment completed.",
+            success: true, message: "Credit assessment completed.",
             entitlements: {
-                tier: entitlements.tier,
-                limit: entitlements.limit,
-                terms: entitlements.terms,
-                used_credit_amount: finalUsedAmount, // Use potentially updated amount
-                available_credit: Math.max(0, entitlements.limit - finalUsedAmount) // Recalculate available credit
-            },
-            assessmentId: assessmentIdForOrder // Send assessment ID only if successfully stored
+                tier: entitlements.tier, limit: entitlements.limit, terms: entitlements.terms,
+                used_credit_amount: parseFloat(dbUserData?.used_credit_amount || 0),
+                available_credit: Math.max(0, entitlements.limit - parseFloat(dbUserData?.used_credit_amount || 0))
+            }, assessmentId: assessmentIdForOrder
         });
-
     } catch (error) {
-        // This outer catch block handles errors from DB Prep, Python Call, Mapping, and Re-thrown DB Storage errors
         console.error(`❌ Overall Assessment Error for User ${userId}:`, error);
         let statusCode = 500;
-        if (error.message?.includes("User profile data missing")) statusCode = 404;
-        else if (error.message?.includes("Prediction service") || error.message?.includes("Assessment service unavailable")) statusCode = 503;
-        else if (error.message?.includes("Invalid risk score") || error.message?.includes("Failed to determine entitlements")) statusCode = 500;
-        else if (error.message?.includes("returned error")) statusCode = 502;
-        // Check for the specific DB error we fixed
-        else if (error.code === 'ER_BAD_FIELD_ERROR') {
-             console.error("Database schema error encountered during assessment storage."); // Log specific type
-             error.message = "Database configuration error prevented assessment storage."; // More user-friendly message
-        }
-        else if (error.message?.includes("Failed to update user's credit limit")) {
-            statusCode = 500; // Internal inconsistency
-            error.message = "Failed to update user limit after assessment.";
-        }
-
+        if (error.message.includes("User profile data missing")) statusCode = 404;
+        else if (error.message.includes("Prediction service") || error.message.includes("Assessment service unavailable")) statusCode = 503;
+        else if (error.message.includes("Invalid risk score") || error.message.includes("Failed to determine entitlements")) statusCode = 500;
+        else if (error.message.includes("returned error")) statusCode = 502;
         res.status(statusCode).json({ success: false, message: error.message || 'Credit assessment failed.' });
     }
 });
 
-
-// --- Other routes remain largely the same, ensure buffer endpoints have corrected finally blocks ---
 
 app.post('/api/assess_credit_simulated', authenticateUser, async (req, res) => {
     const userId = req.user.id;
@@ -519,7 +466,7 @@ app.post('/api/confirm_bnpl_order', authenticateUser, async (req, res) => {
         let statusCode = 500; if (error.message.includes("User record not found")) statusCode = 404;
         const clientMessage = (process.env.NODE_ENV === 'production') ? 'Failed to process your order due to a server issue.' : error.message;
         res.status(statusCode).json({ success: false, message: clientMessage });
-    } finally { if (connection) { try { connection.release(); console.log("   DB Connection Released (Order Confirm).");} catch (e){ console.error("Error releasing connection (Order Confirm)", e)} }} // FIXED finaly block
+    } finally { if (connection) connection.release().catch(relErr => console.error("Release Error:", relErr));}
 });
 
 app.get('/api/active_orders', authenticateUser, async (req, res) => {
@@ -552,6 +499,7 @@ app.post('/api/make_repayment', authenticateUser, async (req, res) => {
         connection = await dbPool.getConnection(); await connection.beginTransaction(); console.log("   Repayment DB Transaction Started.");
         const getOrderSql = 'SELECT user_id, remaining_balance, order_status, product_title FROM orders WHERE order_id = ? FOR UPDATE';
         const getUserSql = 'SELECT used_credit_amount, buffer_bag_balance FROM users WHERE user_id = ? FOR UPDATE';
+        console.log(`   Executing getOrderSql with orderId: ${orderIdInt}`); console.log(`   Executing getUserSql with userId: ${userId}`);
         const [[order], [user]] = await Promise.all([connection.query(getOrderSql, [orderIdInt]), connection.query(getUserSql, [userId])]);
 
         if (!order) throw new Error(`Order ID ${orderIdInt} not found.`); console.log(`   Order Data Found:`, order);
@@ -590,7 +538,7 @@ app.post('/api/make_repayment', authenticateUser, async (req, res) => {
         if (connection) await connection.rollback().catch(rbErr => console.error("Rollback Error:", rbErr));
         let statusCode = 500; if (error.message.includes("not found")) statusCode = 404; else if (error.message.includes("Authorization failed")) statusCode = 403; else if (error.message.includes("Invalid") || error.message.includes("exceeds") || error.message.includes("status is")) statusCode = 400;
         res.status(statusCode).json({ success: false, message: error.message || 'Failed to process repayment.' });
-    } finally { if (connection) { try { connection.release(); console.log("   DB Connection Released (Repayment).");} catch (e) {console.error("Error releasing connection (Repayment)", e)} }} // FIXED finaly block
+    } finally { if (connection) connection.release().catch(relErr => console.error("Release Error:", relErr));}
 });
 
 app.get('/api/current_entitlements', authenticateUser, async (req, res) => {
@@ -634,7 +582,7 @@ app.get('/api/buffer/balance', authenticateUser, async (req, res) => {
         const formattedBalance = numericBalance.toFixed(2);
         console.log(`   After toFixed, formattedBalance is: ${formattedBalance}`);
         console.log(`Server: About to send success response for GET buffer balance for User ${userId}. Balance: £${formattedBalance}`);
-        res.status(200).json({ success: true, balance: formattedBalance });
+        res.status(200).json({ success: true, balance: formattedBalance }); // Using .json() is fine
         console.log(`Server: GET Buffer balance response SENT for User ${userId}.`);
         return;
     } catch (error) {
@@ -659,23 +607,14 @@ app.post('/api/buffer/deposit', authenticateUser, async (req, res) => {
         const [transResult] = await connection.query(`INSERT INTO transactions (user_id, transaction_type, amount, transaction_status, description, is_buffer_transaction, transaction_date) VALUES (?, ?, ?, ?, ?, ?, NOW())`, [userId, 'BUFFER_DEPOSIT', depositAmount.toFixed(2), 'Completed', depositDesc, 1]);
         console.log(`      Buffer Deposit Transaction logged (ID: ${transResult.insertId})`);
         await connection.commit(); console.log("   ✅ Buffer Deposit DB Transaction Committed.");
-        const [balanceResult] = await dbPool.query('SELECT buffer_bag_balance FROM users WHERE user_id = ?', [userId]);
+        const [balanceResult] = await dbPool.query('SELECT buffer_bag_balance FROM users WHERE user_id = ?', [userId]); // Use dbPool for read after commit
         const newBalance = parseFloat(balanceResult[0]?.buffer_bag_balance || 0).toFixed(2);
         res.status(200).json({ success: true, message: `Successfully deposited £${depositAmount.toFixed(2)}.`, new_balance: newBalance });
     } catch (error) {
         console.error(`❌ Error processing buffer deposit for User ${userId}:`, error);
         if (connection) await connection.rollback().catch(rbErr => console.error("Rollback Error:", rbErr));
         res.status(500).json({ success: false, message: error.message || 'Failed to process deposit.' });
-    } finally { // *** FIXED connection release ***
-        if (connection) {
-            try {
-                connection.release();
-                console.log("   DB Connection Released (Deposit).");
-            } catch (releaseErr) {
-                console.error("   Error releasing DB connection (deposit):", releaseErr);
-            }
-        }
-    }
+    } finally { if (connection) connection.release().catch(relErr => console.error("Release Error:", relErr));}
 });
 
 app.post('/api/buffer/withdraw', authenticateUser, async (req, res) => {
@@ -690,7 +629,7 @@ app.post('/api/buffer/withdraw', authenticateUser, async (req, res) => {
         if (userRows.length === 0) throw new Error("User not found for withdrawal.");
         const currentBalance = parseFloat(userRows[0].buffer_bag_balance || 0);
         if (withdrawAmount > currentBalance) {
-            await connection.commit();
+            await connection.commit(); // Or rollback, commit is fine for read-only check fail
             return res.status(400).json({ success: false, message: 'Withdrawal amount exceeds buffer balance.' });
         }
         const [updateResult] = await connection.query('UPDATE users SET buffer_bag_balance = buffer_bag_balance - ? WHERE user_id = ?', [withdrawAmount.toFixed(2), userId]);
@@ -706,16 +645,7 @@ app.post('/api/buffer/withdraw', authenticateUser, async (req, res) => {
         console.error(`❌ Error processing buffer withdrawal for User ${userId}:`, error);
         if (connection) await connection.rollback().catch(rbErr => console.error("Rollback Error:", rbErr));
         res.status(500).json({ success: false, message: error.message || 'Failed to process withdrawal.' });
-    } finally { // *** FIXED connection release ***
-        if (connection) {
-            try {
-                connection.release();
-                console.log("   DB Connection Released (Withdraw).");
-            } catch (releaseErr) {
-                console.error("   Error releasing DB connection (withdraw):", releaseErr);
-            }
-        }
-    }
+    } finally { if (connection) connection.release().catch(relErr => console.error("Release Error:", relErr));}
 });
 // --- --------------------- ---
 

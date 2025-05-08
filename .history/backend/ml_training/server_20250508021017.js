@@ -322,10 +322,11 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
             let connection;
             try {
                 connection = await dbPool.getConnection(); await connection.beginTransaction();
+                // *** FIX 1: Removed assessment_status from INSERT ***
                 const assessSql = `INSERT INTO credit_assessments
                                      (user_id, risk_score, credit_tier, credit_limit, calculated_terms,
                                       assessment_timestamp)
-                                   VALUES (?, ?, ?, ?, ?, NOW())`;
+                                   VALUES (?, ?, ?, ?, ? NOW())`;
                 const assessVals = [
                     userId,
                     riskScore.toFixed(6),

@@ -1,0 +1,188 @@
+.buffer-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Align card top for scrolling */
+    min-height: 100vh;
+    /* Background should ideally come from a higher-level container if consistent across pages */
+    /* background: linear-gradient(200deg, #eff7f6, #F7D6E0); */
+    padding: 50px 20px;
+    box-sizing: border-box;
+}
+
+/* Main Card - Adapt or reuse your .form-card style */
+.buffer-card {
+    background: white;
+    padding: 30px 40px;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    max-width: 750px; /* Adjusted width for two forms side-by-side */
+    width: 100%;
+    margin-left: auto; /* Helps center if parent isn't full flex centering */
+    margin-right: auto;
+}
+
+.buffer-card h2 {
+    text-align: center;
+    color: #252f3b; /* From your Form.css */
+    margin-top: 0;
+    margin-bottom: 20px; /* Space below main title */
+}
+
+.buffer-info {
+    text-align: center;
+    font-size: 0.95em;
+    color: #4a5568;
+    margin-bottom: 30px;
+    line-height: 1.6;
+    padding: 0 10px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 20px;
+}
+
+.balance-display {
+    text-align: center;
+    margin-bottom: 35px; /* More space */
+    padding: 25px;
+    background-color: #ffc6e5; /* Light, calm blue */
+    border: 1px solid #b3d7ff;
+    border-radius: 12px;
+}
+
+.balance-display p:first-of-type { /* Targets "Current Buffer Balance:" */
+     margin-bottom: 8px; /* Space before actual amount */
+     font-size: 1.2em; /* Slightly larger */
+     color: #334155;
+     font-weight: 500;
+}
+
+.balance-amount {
+    display: block;
+    font-size: 3em; /* Make balance prominent */
+    font-weight: 700;
+    color: #6b212e; /* Consistent primary color */
+    margin-top: 5px;
+    line-height: 1;
+}
+
+.buffer-actions {
+    margin-top: 30px;
+    display: flex;
+    gap: 30px; /* Space between deposit and withdraw form sections */
+    justify-content: space-around;
+    flex-wrap: wrap; /* Forms will stack on smaller screens */
+}
+
+.buffer-form {
+    flex: 1; /* Allow forms to share space */
+    min-width: 280px; /* Minimum width for each form section */
+    padding: 25px;
+    border: 1px solid #e9ecef; /* Lighter border */
+    border-radius: 16px;
+    text-align: center;
+    background-color: #fdfdff;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+}
+
+.buffer-form h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #495057;
+    font-size: 1.25em; /* Clearer heading */
+    font-weight: 600;
+}
+
+.info-text { /* For "(This is a simulation...)" */
+    font-size: 0.8em;
+    color: #6c757d;
+    margin-bottom: 18px;
+    min-height: 2.2em;
+}
+
+/* Input field style for amount */
+.buffer-form input[type="number"].form-input {
+  display: block;
+  width: calc(100% - 24px); /* Consider padding */
+  margin: 20px auto 20px auto; /* More vertical margin */
+  padding: 12px;
+  border: 1px solid #ccc; /* Match .form-card input */
+  border-radius: 30px; /* Match .form-card input */
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 1.1em;
+}
+
+.buffer-form input[type="number"].form-input:focus {
+     border-color: #e8a6ba; /* Theme color for focus */
+     box-shadow: 0 0 0 3px rgba(232, 166, 186, 0.25);
+     outline: none;
+}
+
+/* Base Button Styling for Deposit/Withdraw - using .btn class */
+.buffer-form .btn {
+    /* Replicates .btn from Form.css */
+    padding: 12px 24px;
+    margin-top: 15px; /* Spacing above button */
+    border-radius: 30px;
+    border: none;
+    color: white;
+    cursor: pointer;
+    width: calc(100% - 40px); /* Make buttons wide */
+    display: block; /* Make them block elements */
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 1em;
+    font-weight: bold;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.buffer-form .btn:hover:not(:disabled) {
+    transform: translateY(-1px); /* Subtle lift */
+    filter: brightness(1.05); /* Slightly brighter */
+}
+
+.buffer-form .btn:disabled {
+     background-color: #cccccc !important; /* Important to override potential theme colors */
+     color: #666666 !important;
+     cursor: not-allowed;
+     opacity: 0.7;
+     transform: none;
+}
+
+/* Specific Button Colors for Deposit/Withdraw */
+.deposit-button { background: #198754; } /* Green */
+.deposit-button:hover:not(:disabled) { background: #157347; }
+
+.withdraw-button { background: #dc3545; } /* Red */
+.withdraw-button:hover:not(:disabled) { background: #bb2d3b; }
+
+/* Message styling for success/error of actions */
+.message {
+    padding: 10px 15px;
+    margin: 25px auto 0 auto; /* Margin top, centered */
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 500;
+    max-width: 90%; /* Limit width */
+}
+.message.success { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc;}
+.message.error { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7;}
+
+/* General Loading/Error messages (if not styled globally) */
+.loading-message {
+    text-align: center; padding: 20px; font-size: 1em; margin-top: 20px; color: #4a5568; font-style: italic;
+}
+.error-message { /* Top-level error message style */
+    text-align: center; padding: 15px; font-size: 1em; margin: 20px auto; color: #842029; background-color: #f8d7da; border: 1px solid #f5c2c7; border-radius: 6px; max-width: 90%;
+}
+
+/* Back Button (assuming .btn is also global) */
+.back-button {
+   /* display: block; */ /* Re-evaluate if needed with current structure */
+   margin: 40px auto 10px auto !important; /* Ensure it's centered with margin */
+   background-color: #6c757d !important; /* Secondary color */
+   color: white !important;
+   min-width: 180px;
+}
+.back-button:hover {
+    background-color: #5a6268 !important;
+}

@@ -322,17 +322,19 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
             let connection;
             try {
                 connection = await dbPool.getConnection(); await connection.beginTransaction();
+                // *** FIX 1: Removed assessment_status from INSERT ***
                 const assessSql = `INSERT INTO credit_assessments
                                      (user_id, risk_score, credit_tier, credit_limit, calculated_terms,
-                                      assessment_timestamp)
-                                   VALUES (?, ?, ?, ?, ?, NOW())`;
+                                      assessment_timestamp, features_used)
+                                   VALUES (?, ?, ?, ?, ?, NOW(), ?)`; // Removed assessment_status, adjusted placeholders
                 const assessVals = [
                     userId,
                     riskScore.toFixed(6),
                     entitlements.tier,
                     entitlements.limit.toFixed(2),
                     JSON.stringify(entitlements.terms),
-
+                    // 'COMPLETED', // Removed value for assessment_status
+                    JSON.stringify(rawFeaturesForModel)
                 ];
                 const [insRes] = await connection.query(assessSql, assessVals);
                 assessmentIdForOrder = insRes.insertId;
@@ -357,6 +359,7 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
                 // Let's re-throw to make the failure clear in the outer catch
                 throw dbStoreError; // Re-throw the DB error
             } finally {
+                 // *** FIX 2: Correct connection release ***
                 if (connection) {
                     try {
                         connection.release();
