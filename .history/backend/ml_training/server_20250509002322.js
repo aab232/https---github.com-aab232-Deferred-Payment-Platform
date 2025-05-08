@@ -541,7 +541,7 @@ app.get('/api/active_orders', authenticateUser, async (req, res) => {
 });
 
 app.post('/api/make_repayment', authenticateUser, async (req, res) => {
-    const userId = req.user.id;
+    const userId = req.user.id; // This is correctly getting the user ID from the authenticated token
     const { order_id, repayment_amount } = req.body;
     let connection = null;
     const orderIdInt = parseInt(order_id, 10);
@@ -550,6 +550,7 @@ app.post('/api/make_repayment', authenticateUser, async (req, res) => {
     const amount = Number(repayment_amount);
 
     if (isNaN(orderIdInt) || orderIdInt <= 0 || isNaN(amount) || amount <= 0) {
+        // It's good practice to log the invalid input before returning
         console.warn(`   Repayment Validation Failed: OrderID='${order_id}', Amount='${repayment_amount}'`);
         return res.status(400).json({ success: false, message: 'Invalid order ID or repayment amount.' });
     }
@@ -562,47 +563,47 @@ app.post('/api/make_repayment', authenticateUser, async (req, res) => {
 
         const getOrderSql = 'SELECT user_id, remaining_balance, order_status, product_title FROM orders WHERE order_id = ? FOR UPDATE';
         const getUserSql = 'SELECT used_credit_amount, buffer_bag_balance FROM users WHERE user_id = ? FOR UPDATE';
+        const [[order], [user]] = await Promise.all([connection.query(getOrderSql, [orderIdInt]), connection.query(getUserSql, [userId])]);
 
-        // --- CORRECTED DESTRUCTURING OF Promise.all RESULTS ---
-        const [orderQueryResults, userQueryResults] = await Promise.all([
-            connection.query(getOrderSql, [orderIdInt]),
-            connection.query(getUserSql, [userId])
-        ]);
-
-        const orderRows = orderQueryResults[0]; // Actual array of rows for the order query
-        const userRows = userQueryResults[0];   // Actual array of rows for the user query
-
-        const order = orderRows.length > 0 ? orderRows[0] : null; // Get the first order object, or null
-        const user = userRows.length > 0 ? userRows[0] : null;   // Get the first user object, or null
-        // --- END OF CORRECTED DESTRUCTURING ---
-
+        // --- MODIFIED SECTION WITH DETAILED LOGGING ---
         if (!order) {
+            // Added more context to the log and error message
             console.error(`   Repayment Error: Order with ID ${orderIdInt} not found in the database.`);
             throw new Error(`Order ID ${orderIdInt} not found. Cannot process repayment.`);
         }
-        console.log(`   Order Data Found:`, order); // Now 'order' is the object (or null if not found)
+        // Your existing console.log for order data is good:
+        console.log(`   Order Data Found:`, order);
 
         if (!user) {
+            // Added more context to the log and error message
             console.error(`   Repayment Error: User with ID ${userId} (from token) not found in the database.`);
             throw new Error(`User ID ${userId} not found for repayment. User may not exist.`);
         }
-        console.log(`   User Data Found:`, user); // Now 'user' is the object (or null if not found)
+        // Your existing console.log for user data is good:
+        console.log(`   User Data Found: used_credit=${user.used_credit_amount}, buffer_balance=${user.buffer_bag_balance}`);
 
-        // --- OWNERSHIP CHECK ---
-        // These logs are still useful to clearly see what's being compared
-        console.log(`      OWNERSHIP CHECK: Comparing Order User ID with Token User ID`);
-        console.log(`      OWNERSHIP CHECK: order.user_id (from DB): '${order.user_id}' (type: ${typeof order.user_id})`);
-        console.log(`      OWNERSHIP CHECK: userId (from token): '${userId}' (type: ${typeof userId})`);
+        // --- DETAILED LOGGING FOR OWNERSHIP CHECK ---
+        console.log(`      DEBUG: --- Ownership Check Details ---`);
+        console.log(`      DEBUG: Value of 'order.user_id' (from DB query): '${order.user_id}', Type: ${typeof order.user_id}`);
+        console.log(`      DEBUG: Value of 'userId' (from JWT token): '${userId}', Type: ${typeof userId}`);
 
         const orderUserIdAsNumber = Number(order.user_id);
-        const tokenUserIdAsNumber = Number(userId); // userId from token is already a number, but Number() is safe
+        const tokenUserIdAsNumber = Number(userId);
 
+        console.log(`      DEBUG: After Number() conversion:`);
+        console.log(`      DEBUG:   Number(order.user_id) -> ${orderUserIdAsNumber}, Type: ${typeof orderUserIdAsNumber}`);
+        console.log(`      DEBUG:   Number(userId from token) -> ${tokenUserIdAsNumber}, Type: ${typeof tokenUserIdAsNumber}`);
+        console.log(`      DEBUG: Result of (Number(order.user_id) !== Number(userId)): ${orderUserIdAsNumber !== tokenUserIdAsNumber}`);
+        console.log(`      DEBUG: --- End Ownership Check Details ---`);
+        // --- END OF DETAILED LOGGING FOR OWNERSHIP CHECK ---
+
+        // Using the converted numbers for the check now for consistency with logs
         if (orderUserIdAsNumber !== tokenUserIdAsNumber) {
+            // This log helps confirm *why* it's throwing the error
             console.error(`      AUTHORIZATION FAILED: Order User ID (${orderUserIdAsNumber}) does not match Token User ID (${tokenUserIdAsNumber}).`);
             throw new Error("Authorization failed: User does not own this order.");
         }
-        console.log("      -> Authorization Check Passed.");
-        // --- END OF OWNERSHIP CHECK ---
+        console.log("      -> Authorization Check Passed."); // This will only log if the above 'if' is false
 
         if (order.order_status !== 'ACTIVE') {
             console.warn(`   Repayment Attempt on Non-Active Order: Order ID ${orderIdInt}, Status: ${order.order_status}`);
@@ -611,17 +612,19 @@ app.post('/api/make_repayment', authenticateUser, async (req, res) => {
         console.log("      -> Order Status Check Passed.");
 
         const currentBalance = parseFloat(order.remaining_balance);
-        if (isNaN(currentBalance)) {
+        if (isNaN(currentBalance)) { // Added check for NaN on currentBalance
              console.error(`   Repayment Error: remaining_balance for order ${orderIdInt} is not a valid number: '${order.remaining_balance}'`);
              throw new Error("Error reading order balance. Please contact support.");
         }
 
-        const epsilon = 0.001; // Tolerance for float comparisons
+        // Using a small epsilon for float comparison can be safer
+        const epsilon = 0.001; // A small tolerance
         if (amount > currentBalance + epsilon) {
             console.warn(`   Repayment Amount Exceeds Balance: Amount £${amount.toFixed(2)}, Balance £${currentBalance.toFixed(2)}`);
             throw new Error(`Payment amount (£${amount.toFixed(2)}) exceeds remaining balance (£${currentBalance.toFixed(2)}).`);
         }
         console.log(`      -> Amount Check Passed.`);
+        // --- END OF MODIFIED SECTION ---
 
         console.log("*** Simulating external payment processing gateway call... SUCCEEDED. ***");
 
@@ -632,20 +635,20 @@ app.post('/api/make_repayment', authenticateUser, async (req, res) => {
         console.log(`         -> Repayment Transaction logged (ID: ${repayTransResult.insertId})`);
 
         const newBalance = currentBalance - amount;
-        const newStatus = (newBalance <= epsilon) ? 'PAID_OFF' : 'ACTIVE';
+        const newStatus = (newBalance <= epsilon) ? 'PAID_OFF' : 'ACTIVE'; // Used epsilon here too
         await connection.query('UPDATE orders SET remaining_balance = ?, order_status = ? WHERE order_id = ?', [newBalance.toFixed(2), newStatus, orderIdInt]);
         console.log(`         -> Order ${orderIdInt} updated. New Bal: ${newBalance.toFixed(2)}, Status: ${newStatus}`);
 
-        // Safely handle used_credit_amount which might be null/undefined from DB
+        // Ensure user.used_credit_amount is a number before operations
         const currentUsedAmountDB = parseFloat(user.used_credit_amount);
         const validUsedAmount = isNaN(currentUsedAmountDB) ? 0 : currentUsedAmountDB;
         const amountToDecrease = Math.min(amount, validUsedAmount);
 
         await connection.query('UPDATE users SET used_credit_amount = GREATEST(0, used_credit_amount - ?) WHERE user_id = ?', [amountToDecrease.toFixed(2), userId]);
-        console.log(`         -> User ${userId} used_credit_amount updated by -${amountToDecrease.toFixed(2)}. Previous DB used amount was ~£${validUsedAmount.toFixed(2)}`);
+        console.log(`         -> User ${userId} used_credit_amount updated (-${amountToDecrease.toFixed(2)}). Current DB used amount was ~${validUsedAmount.toFixed(2)}`);
 
-        const bufferContribution = parseFloat((amount * BUFFER_CONTRIBUTION_PERCENTAGE).toFixed(2)); // Assuming BUFFER_CONTRIBUTION_PERCENTAGE is defined globally
-        console.log(`      BUFFER CONTRIBUTION: £${bufferContribution.toFixed(2)} from repayment of £${amount.toFixed(2)}`);
+        const bufferContribution = parseFloat((amount * BUFFER_CONTRIBUTION_PERCENTAGE).toFixed(2));
+        console.log(`      D. Buffer Contribution: £${bufferContribution.toFixed(2)}`);
         if (bufferContribution > 0) {
             const bufferDesc = `Buffer Bag contribution from Order #${orderIdInt} repayment`;
             const bufferTxSql = `INSERT INTO transactions (user_id, transaction_type, amount, transaction_status, description, is_buffer_transaction, transaction_date) VALUES (?, ?, ?, ?, ?, ?, NOW())`;
@@ -653,28 +656,30 @@ app.post('/api/make_repayment', authenticateUser, async (req, res) => {
             console.log(`            -> Buffer Transaction Logged (ID: ${bufferTransResult.insertId})`);
 
             await connection.query('UPDATE users SET buffer_bag_balance = buffer_bag_balance + ? WHERE user_id = ?', [bufferContribution.toFixed(2), userId]);
-            // Safely handle buffer_bag_balance
+            // Ensure user.buffer_bag_balance is a number
             const currentBufferBalanceDB = parseFloat(user.buffer_bag_balance);
             const validBufferBalance = isNaN(currentBufferBalanceDB) ? 0 : currentBufferBalanceDB;
             const newBufferBalanceTotal = (validBufferBalance + bufferContribution).toFixed(2);
-            console.log(`            -> User ${userId} buffer_bag_balance updated. Previous DB buffer ~£${validBufferBalance.toFixed(2)}. New total buffer ~£${newBufferBalanceTotal}`);
+            console.log(`            -> User ${userId} buffer_bag_balance updated. Previous DB buffer was ~£${validBufferBalance.toFixed(2)}. New total buffer ~£${newBufferBalanceTotal}`);
         } else {
-            console.log(`         Skipping buffer contribution (calculated contribution is £${bufferContribution.toFixed(2)}).`);
+            console.log(`         Skipping buffer contribution processing (contribution is £${bufferContribution.toFixed(2)}).`);
         }
 
         await connection.commit();
         console.log("   ✅ Repayment DB Transaction Committed Successfully.");
         res.status(200).json({ success: true, message: 'Repayment successful!', new_balance: newBalance.toFixed(2), order_status: newStatus, buffer_contribution_added: bufferContribution.toFixed(2) });
     } catch (error) {
+        // Log the error with more detail
         console.error(`❌ Error processing repayment for Order ${orderIdInt || order_id}, User ${userId}:`, error.message, error.stack ? `\nStack: ${error.stack}` : '');
         if (connection) {
             await connection.rollback().catch(rbErr => console.error("   Rollback Error during catch:", rbErr));
         }
         let statusCode = 500;
+        // Simplified status code logic, but you can make it more specific
         if (error.message.includes("not found")) statusCode = 404;
         else if (error.message.includes("Authorization failed")) statusCode = 403;
         else if (error.message.includes("Invalid") || error.message.includes("exceeds") || error.message.includes("status is")) statusCode = 400;
-        else if (error.message.includes("Error reading order balance")) statusCode = 500;
+        else if (error.message.includes("Error reading order balance")) statusCode = 500; // Or perhaps a 400 if it implies bad data.
 
         res.status(statusCode).json({ success: false, message: error.message || 'Failed to process repayment.' });
     } finally {
