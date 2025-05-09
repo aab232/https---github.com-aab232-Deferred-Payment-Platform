@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BackButton from './BackButton';
-import './SpendingLimit.css';
+import './SpendingLimit.css'; // We'll create this CSS file later
 
 // Assuming authenticatedFetch is in a shared utils file or defined here
 // For now, let's copy it here for self-containment, but ideally, it's imported

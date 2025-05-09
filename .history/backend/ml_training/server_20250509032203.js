@@ -570,62 +570,6 @@ app.get('/api/spending-limit', authenticateUser, async (req, res) => {
     }
 });
 
-
-// --- ASSESSMENT HISTORY ENDPOINT ---
-app.get('/api/assessment_history', authenticateUser, async (req, res) => {
-    const userId = req.user.id;
-    console.log(`\n⚙️ Fetching assessment history for User ID: ${userId}`);
-    try {
-        // Ensure columns match your 'credit_assessments' table structure
-        // Specifically, 'calculated_terms' should be stored as a JSON string in the DB
-        const sql = `
-            SELECT assessment_id, assessment_timestamp, risk_score, credit_tier, credit_limit, calculated_terms
-            FROM credit_assessments
-            WHERE user_id = ?
-            ORDER BY assessment_timestamp DESC
-        `;
-        const [historyRows] = await dbPool.query(sql, [userId]);
-
-        // Process rows to ensure data types are as expected by the frontend,
-        // especially parsing 'calculated_terms' which is likely a JSON string.
-        const formattedHistory = historyRows.map(row => {
-            let termsArray = []; // Default to empty array
-            try {
-                // Safely parse 'calculated_terms'. It might be null or an invalid JSON string.
-                if (row.calculated_terms) {
-                    const parsedTerms = JSON.parse(row.calculated_terms);
-                    // Ensure what we parsed is actually an array
-                    if (Array.isArray(parsedTerms)) {
-                        termsArray = parsedTerms;
-                    } else {
-                        console.warn(`User ${userId}, Assessment ${row.assessment_id}: 'calculated_terms' was not an array after parsing:`, row.calculated_terms);
-                    }
-                }
-            } catch (e) {
-                console.warn(`User ${userId}, Assessment ${row.assessment_id}: Error parsing 'calculated_terms' JSON string: '${row.calculated_terms}'. Error: ${e.message}`);
-                // termsArray remains empty on error, which is a safe default
-            }
-
-            return {
-                assessment_id: row.assessment_id,
-                assessment_timestamp: row.assessment_timestamp,
-                risk_score: row.risk_score !== null ? parseFloat(row.risk_score) : null,
-                credit_tier: row.credit_tier,
-                credit_limit: parseFloat(row.credit_limit || 0), // Ensure numeric, default 0
-                calculated_terms: termsArray // Use the parsed (or default empty) array
-            };
-        });
-
-        console.log(`   ✅ Found ${formattedHistory.length} assessment records for User ${userId}.`);
-        res.status(200).json({ success: true, history: formattedHistory });
-
-    } catch (error) {
-        console.error(`❌ DB Error fetching assessment history for User ${userId}:`, error.message, error.stack);
-        res.status(500).json({ success: false, message: 'Error retrieving your assessment history.' });
-    }
-});
-
-
 app.post('/api/spending-limit', authenticateUser, async (req, res) => {
     const userId = req.user.id;
     const { spendingLimit } = req.body; // Will be a number or null

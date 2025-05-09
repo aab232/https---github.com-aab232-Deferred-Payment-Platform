@@ -1,0 +1,141 @@
+.spending-limit-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 30px;
+    padding-bottom: 30px;
+    min-height: 80vh;
+}
+
+.form-card {
+    background-color: #ffffff;
+    padding: 25px 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 550px;
+    text-align: left;
+}
+
+.current-limits-info {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 25px;
+}
+
+.current-limits-info p {
+    margin: 8px 0;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+.current-limits-info strong {
+    color: #6b212e;
+}
+
+.limit-info-note {
+    font-size: 0.85rem !important;
+    color: #6c757d !important;
+    margin-top: 10px !important;
+}
+
+.spending-limit-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #495057;
+}
+
+.form-input {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1rem;
+}
+
+.form-input:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.action-button {
+    background-color: #e8a6ba;
+    color: white;
+    flex-grow: 1;
+}
+
+.action-button:hover {
+    background-color: #d76a8b;
+}
+
+.remove-button {
+    background-color: #dc3545;
+    color: white;
+    flex-grow: 1;
+}
+
+.remove-button:hover {
+    background-color: #c82333;
+}
+
+.btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+
+.message {
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 15px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+.message.info {
+    background-color: #cce5ff;
+    color: #6b212e;
+    border: 1px solid #b8daff;
+}
+
+.small-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: -10px;
+    margin-bottom: 15px;
+}

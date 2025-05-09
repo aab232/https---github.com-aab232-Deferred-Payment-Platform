@@ -103,7 +103,7 @@ const LinkAccount = () => {
             <BackButton />
              {/* Use the more specific form card class from LinkAccount.css */}
              <div className='link-account-form-card'>
-                <h2>Link Your Bank Account</h2>
+                <h2>Link Bank Account</h2>
                 <p>
                     Connect your bank account securely. For this prototype,
                     clicking below simulates a successful Sandbox connection on the backend.

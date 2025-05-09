@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import BackButton from './BackButton';
 import './LinkAccount.css'; // <--- IMPORT THE NEW CSS FILE
 
@@ -103,7 +104,7 @@ const LinkAccount = () => {
             <BackButton />
              {/* Use the more specific form card class from LinkAccount.css */}
              <div className='link-account-form-card'>
-                <h2>Link Your Bank Account</h2>
+                <h2>Link Bank Account (Simulation Setup)</h2>
                 <p>
                     Connect your bank account securely. For this prototype,
                     clicking below simulates a successful Sandbox connection on the backend.
