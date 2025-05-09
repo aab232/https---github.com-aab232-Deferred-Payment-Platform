@@ -68,7 +68,6 @@ const Main = () => {
     const [sortOption, setSortOption] = useState('');
     const [priceRange, setPriceRange] = useState([0, 2000]);
     const [visibleProducts, setVisibleProducts] = useState(9);
-    const productsToShowIncrement = 9;
 
     // Modal & BNPL State
     const [selectedProduct, setSelectedProduct] = useState(null);

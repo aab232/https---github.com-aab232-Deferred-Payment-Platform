@@ -232,6 +232,7 @@ const BufferBag = () => {
                 <div className="buffer-actions">
                     <form className="buffer-form" onSubmit={handleDeposit}>
                         <h4>Deposit to Buffer Bag</h4>
+                        <p className="info-text">(This is a simulation - no real card payment will be processed)</p>
                         <input
                             type="number"
                             placeholder="£ Deposit Amount"
@@ -252,6 +253,7 @@ const BufferBag = () => {
 
                     <form className="buffer-form" onSubmit={handleWithdraw}>
                         <h4>Withdraw from Buffer Bag</h4>
+                        <p className="info-text">(This is a simulation - no real bank transfer will occur)</p>
                         <input
                             type="number"
                             placeholder="£ Withdraw Amount"

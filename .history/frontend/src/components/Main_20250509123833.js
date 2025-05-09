@@ -15,10 +15,10 @@ const mockProducts = [
     { id: "prodI", title: "ASUS VivoBook 15 M1502YA", price: "£650.00", link: "#i", numericPrice: 650.00 },
     { id: "prodJ", title: "DELL INSPION 16 5640", price: "£750.00", link: "#j", numericPrice: 750.00 },
     { id: "prodK", title: "i7010 No HD Laptop", price: "£7.99", link: "#k", numericPrice: 7.99 },
-    { id: "prodL", title: "Jumper Pro 15.6 Inch HD Laptop", price: "£1350.00", link: "#l", numericPrice: 1350.00 },
-    { id: "prodM", title: "HP 14 Inch Laptop - Intel Core i5, 8GB", price: "£349.00", link: "#m", numericPrice: 349.00 },
-    { id: "prodN", title: "Microsoft Surface Laptop 4 i7-1185G7 Notebook", price: "£1867.91", link: "#n", numericPrice: 1867.91 },
-    { id: "prodO", title: "DELL XPS 16 Laptop", price: "£1799.00", link: "#o", numericPrice: 1799.00 },
+    { id: "prodK", title: "Jumper Pro 15.6 Inch HD Laptop", price: "£1350.00", link: "#l", numericPrice: 1350.00 },
+    { id: "prodK", title: "HP 14 Inch Laptop - Intel Core i5, 8GB", price: "£349.00", link: "#m", numericPrice: 349.00 },
+    { id: "prodK", title: "Microsoft Surface Laptop 4 i7-1185G7 Notebook", price: "£1867.91", link: "#n", numericPrice: 1867.91 },
+    { id: "prodK", title: "DELL XPS 16 Laptop", price: "£1799.00", link: "#o", numericPrice: 1799.00 },
 ];
 // --- ------------------------------------ ---
 
@@ -68,7 +68,6 @@ const Main = () => {
     const [sortOption, setSortOption] = useState('');
     const [priceRange, setPriceRange] = useState([0, 2000]);
     const [visibleProducts, setVisibleProducts] = useState(9);
-    const productsToShowIncrement = 9;
 
     // Modal & BNPL State
     const [selectedProduct, setSelectedProduct] = useState(null);
@@ -92,31 +91,13 @@ const Main = () => {
         else if (sortOption === 'name') updatedProducts.sort((a, b) => a.title.localeCompare(b.title));
 
         setFilteredProducts(updatedProducts);
-        setVisibleProducts(9);
-    }, [searchTerm, sortOption, priceRange, products]);
+        setVisibleProducts(9); // Reset pagination on change
+    }, [searchTerm, sortOption, priceRange, products]); // Dependency array is correct
 
-   const handleShowMore = () => {
-        setVisibleProducts(prevVisibleProducts => {
-            // Calculate the new count, but don't exceed the total number of filtered products
-            const newCount = prevVisibleProducts + productsToShowIncrement;
-            return Math.min(newCount, filteredProducts.length); // Ensure we don't go past the end
-        });
-    }; // <--- COMPLETED FUNCTION
-
-    const openModal = (product) => {
-        setSelectedProduct(product);
-        setAssessmentLoading(false);
-        setAssessmentResult(null);
-        setSelectedTerm(null);
-        setOrderLoading(false);
-    };
-
-    const closeModal = () => {
-        setSelectedProduct(null);
-        // Consider resetting assessmentResult and selectedTerm here too if you want the modal to be fully fresh
-        // setAssessmentResult(null);
-        // setSelectedTerm(null);
-    };
+    // --- Event Handlers ---
+    const handleShowMore = () => { /* ... */ };
+    const openModal = (product) => {setSelectedProduct(product); setAssessmentLoading(false); setAssessmentResult(null); setSelectedTerm(null); setOrderLoading(false); };
+    const closeModal = () => setSelectedProduct(null);
 
     // Handle BNPL Assessment Button Click
     const handleBnplAssessment = async () => {
@@ -351,8 +332,9 @@ const Main = () => {
                     </div>
                 </div>
             )}
-        </div>
+        </div> // End main-container
     );
-};
+// --- ADD THIS CLOSING BRACE ---
+}; // <--- THIS WAS LIKELY THE MISSING BRACE/ERROR POINT
 
 export default Main;
