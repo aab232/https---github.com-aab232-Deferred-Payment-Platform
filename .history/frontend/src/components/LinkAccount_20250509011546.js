@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BackButton from './BackButton';
+import './LinkAccount.css';
 
 
 // --- Authenticated Fetch Helper ---
@@ -99,7 +100,7 @@ const LinkAccount = () => {
             }
             setLinkError(errorMessage);
         }
-    }, []);
+    }, [navigate]);
 
     // Simplified button handler for simulation
     const handleSimulatedLinkClick = () => {

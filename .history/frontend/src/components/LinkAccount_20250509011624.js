@@ -99,7 +99,7 @@ const LinkAccount = () => {
             }
             setLinkError(errorMessage);
         }
-    }, []);
+    }, [navigate]);
 
     // Simplified button handler for simulation
     const handleSimulatedLinkClick = () => {
