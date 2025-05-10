@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken'; // for creating and verifying json web tokens (f
 import dotenv from 'dotenv'; // Load .env file variables FIRST
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid'; // plaid sdk for bank interactions
 import fetch from 'node-fetch'; // library for making http requests to other services
+// --- -------------------- ---
 
 
 // --- Environment Variable Checks & Setup ---

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import './ContactUs.css';
 import BackButton from './BackButton';
 
-// defines contactus functional component
+// defines the contactus functional component
 const ContactUs = () => {
   // state to manage the values of the form input fields
   const [formData, setFormData] = useState({ // initial state for form data
@@ -50,7 +50,7 @@ const ContactUs = () => {
         </p>
 
         {isSubmitted && (
-          <p style={{ color: '#6b212e', fontWeight: 'bold' }}>
+          <p style={{ color: 'pink', fontWeight: 'bold' }}>
             Thank you! Your message has been sent successfully.
           </p>
         )}

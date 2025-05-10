@@ -1,6 +1,12 @@
+// src/components/BufferBag.js
+
+// react core hooks for state, side effects, and memoization
 import React, { useState, useEffect, useCallback } from 'react';
+// hook for programmatic navigation
 import { useNavigate } from 'react-router-dom';
+// component for a 'back' navigation button
 import BackButton from './BackButton';
+// specific styles for this bufferbag component
 import './BufferBag.css';
 
 // --- authenticated fetch helper ---

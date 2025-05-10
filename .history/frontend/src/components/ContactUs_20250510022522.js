@@ -1,60 +1,62 @@
 import React, { useState } from 'react';
-import './ContactUs.css'; // Import the corresponding CSS file
+import './ContactUs.css';
+import BackButton from './BackButton';
 
+// defines the contactus functional component
 const ContactUs = () => {
-  // State to manage form inputs
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: '',
+  // state to manage the values of the form input fields
+  const [formData, setFormData] = useState({ // initial state for form data
+    name: '',    // user's name
+    email: '',   // user's email address
+    subject: '', // subject of the message
+    message: '', // the message content
   });
-  const [isSubmitted, setIsSubmitted] = useState(false); // State to show confirmation
+  // state to control the visibility of the submission confirmation message
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // Handle input changes
+  // handles changes in any of the form input fields
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target; // destructures 'name' and 'value' from the event target (the input field)
+    // updates the formdata state using the previous state
     setFormData(prevState => ({
-      ...prevState,
-      [name]: value,
+      ...prevState, // spreads the existing state
+      [name]: value, // updates the specific field (identified by 'name') with the new 'value'
     }));
   };
 
-  // Handle form submission
+  // handles the submission of the contact form
   const handleSubmit = (e) => {
-    e.preventDefault(); // Prevent default browser submission
-    // In a real application, you would send formData to your backend API here
-    console.log("Form Data Submitted:", formData);
+    e.preventDefault(); // prevents the default browser behavior for form submission (page reload)
+    console.log('Form Data Submitted:', formData); // logs the submitted form data to the console (for debugging/prototype)
 
-    // Show a confirmation message and clear the form (optional)
+    // shows a confirmation message to the user
     setIsSubmitted(true);
+    // clears the form fields after submission by resetting the formdata state
     setFormData({ name: '', email: '', subject: '', message: '' });
 
-    // Hide confirmation after a few seconds (optional)
+    // hides the confirmation message after a few seconds (5000 milliseconds = 5 seconds)
     setTimeout(() => setIsSubmitted(false), 5000);
   };
 
+  // jsx for rendering the contact us page
   return (
-    <div className="container"> {/* Uses the gradient background and centering */}
-      <div className="form-card"> {/* The white card container */}
+    <div className="container">
+      <BackButton />
+      <div className="form-card">
         <h2>Contact Us</h2>
 
-        {/* Paragraph explaining query handling */}
         <p>
           Your questions and feedback are important to us! Once you submit your query using the form below, our dedicated support team will review the details. We aim to process and respond to your provided email address as quickly as possible, typically within 1-2 business days.
         </p>
 
-        {/* Display confirmation message */}
         {isSubmitted && (
           <p style={{ color: 'pink', fontWeight: 'bold' }}>
             Thank you! Your message has been sent successfully.
           </p>
         )}
 
-        {/* --- Contact Form --- */}
         <form onSubmit={handleSubmit}>
-          {/* Form Group for Name */}
-          <div className="form-group"> {/* Add a wrapper for better styling/spacing if needed */}
+          <div className="form-group">
             <label htmlFor="name">Full Name:</label>
             <input
               type="text"
@@ -67,7 +69,6 @@ const ContactUs = () => {
             />
           </div>
 
-          {/* Form Group for Email */}
           <div className="form-group">
             <label htmlFor="email">Email Address:</label>
             <input
@@ -81,7 +82,6 @@ const ContactUs = () => {
             />
           </div>
 
-          {/* Form Group for Subject */}
           <div className="form-group">
             <label htmlFor="subject">Subject:</label>
             <input
@@ -94,13 +94,12 @@ const ContactUs = () => {
             />
           </div>
 
-          {/* Form Group for Message */}
           <div className="form-group">
             <label htmlFor="message">Your Message:</label>
             <textarea
               id="message"
               name="message"
-              rows="5" // Adjust number of rows as needed
+              rows="5"
               value={formData.message}
               onChange={handleChange}
               required
@@ -108,16 +107,15 @@ const ContactUs = () => {
             ></textarea>
           </div>
 
-          {/* Submit Button - uses .btn style */}
           <button type="submit" className="btn">
             Send Message
           </button>
         </form>
-        {/* End Contact Form */}
 
       </div>
     </div>
   );
 };
 
+// exports the contactus component to make it available for import in other files
 export default ContactUs;

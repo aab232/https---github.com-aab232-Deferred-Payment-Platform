@@ -1,0 +1,107 @@
+.history-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    background: linear-gradient(200deg, #eff7f6, #F7D6E0);
+    padding: 50px 20px;
+    box-sizing: border-box;
+}
+
+.history-card {
+    background: white;
+    padding: 30px 40px;
+    border-radius: 16px;
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+    max-width: 950px;
+    width: 100%;
+    margin-top: 60px;
+}
+
+.history-card h2 {
+    text-align: center;
+    color: #252f3b;
+    margin-top: 0;
+    margin-bottom: 30px;
+}
+
+.loading-message,
+.error-message {
+    text-align: center;
+    padding: 20px;
+    font-size: 1.1em;
+    margin-top: 20px;
+}
+
+.error-message {
+    color: #842029;
+    background-color: #f8d7da;
+    border: 1px solid #f5c2c7;
+    border-radius: 6px;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 0.95em;
+}
+
+.history-table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    padding: 12px 10px;
+    text-align: left;
+    color: #495057;
+    white-space: nowrap;
+}
+
+.history-table tbody td {
+    border-bottom: 1px solid #e9ecef;
+    padding: 10px 10px;
+    vertical-align: middle;
+}
+
+.history-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.history-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.back-button {
+    display: block;
+    margin: 30px auto 0 auto;
+    padding: 10px 25px;
+    font-size: 1em;
+    cursor: pointer;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+.back-button:hover {
+    background-color: #5a6268;
+}
+
+
+@media (max-width: 768px) {
+    .history-card {
+        padding: 20px;
+    }
+    .history-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    .history-table thead th,
+    .history-table tbody td {
+        padding: 8px;
+        font-size: 0.9em;
+    }
+     .history-card h2 {
+        font-size: 1.5em;
+     }
+}
