@@ -15,6 +15,7 @@ const mockProducts = [
     { id: 'prodI', title: 'ASUS VivoBook 15 M1502YA', price: '£650.00', link: '#i', numericPrice: 650.00 },
     { id: 'prodJ', title: 'DELL INSPION 16 5640', price: '£750.00', link: '#j', numericPrice: 750.00 },
     { id: 'prodK', title: 'i7010 No HD Laptop', price: '£7.99', link: '#k', numericPrice: 7.99 },
+    // ensure all product ids are unique in a real dataset for correct keying
     { id: 'prodL', title: 'Jumper Pro 15.6 Inch HD Laptop', price: '£1350.00', link: '#l', numericPrice: 1350.00 },
     { id: 'prodM', title: 'HP 14 Inch Laptop - Intel Core i5, 8GB', price: '£349.00', link: '#m', numericPrice: 349.00 },
     { id: 'prodN', title: 'Microsoft Surface Laptop 4 i7-1185G7 Notebook', price: '£1867.91', link: '#n', numericPrice: 1867.91 },
@@ -64,11 +65,12 @@ async function authenticatedFetch(url, options = {}) {
 
 
 // --- main component ---
-// defines main component, which displays products and handles bnpl flow
+// defines main component, which displays products and handles bnpl (buy now, pay later) flow
 const Main = () => {
     // --- state variables ---
-    // state to hold source array of all products (initialised with mockdata)
-    const products = mockProducts;
+    // 'products' state holds source array of all products (initialised with mockdata)
+    // 'setproducts' would be its setter function, currently unused as product list is static
+    const [products, setProducts] = useState(mockProducts); // corrected to use proper usestate destructuring
     // state to hold products after applying filters (search, sort, price range)
     const [filteredProducts, setFilteredProducts] = useState(mockProducts);
     // state for search term entered by user in search input
@@ -82,14 +84,14 @@ const Main = () => {
     // defines number of additional products to display when "load more" button is clicked
     const productsToShowIncrement = 9;
 
-    // state related to product modal and bnpl process
+    // state related to product modal and bnpl (buy now, pay later) process
     // state for currently selected product object (to display in detail modal)
     const [selectedProduct, setSelectedProduct] = useState(null);
-    // state to indicate if bnpl assessment is currently loading/processing
+    // state to indicate if bnpl (buy now, pay later) assessment is currently loading/processing
     const [assessmentLoading, setAssessmentLoading] = useState(false);
     // state to store result of bnpl assessment (includes success/failure and entitlements)
     const [assessmentResult, setAssessmentResult] = useState(null);
-    // state for payment term (3 months, 6 months, etc.) selected by user after assessment
+    // state for payment term (e.g., 3 months, 6 months) selected by user after assessment
     const [selectedTerm, setSelectedTerm] = useState(null);
     // state to indicate if order confirmation is currently processing
     const [orderLoading, setOrderLoading] = useState(false);
@@ -101,7 +103,9 @@ const Main = () => {
     // this useeffect hook runs whenever searchterm, sortoption, pricerange, or source products list change
     useEffect(() => {
         // starts with all products from 'products' state (which holds mockproducts or could hold fetched data)
-        let updatedProducts = products.filter(product => {
+        let updatedProducts = products // using corrected 'products' state variable
+            // filters products based on search term (case-insensitive match in product title)
+            .filter(product => {
                 // safety check: ensure product and product.title are valid before calling tolowercase
                 if (!product || typeof product.title !== 'string') {
                     console.warn('Skipping product with missing or invalid title during filter:', product);
@@ -147,7 +151,7 @@ const Main = () => {
         // note: could also consider resetting assessmentresult and selectedterm here for a completely fresh modal next time
     };
 
-    // handles bnpl assessment button click within product modal
+    // handles bnpl (buy now, pay later) assessment button click within product modal
     const handleBnplAssessment = async () => {
         if (!selectedProduct) return; // exits if no product is currently selected in modal
         // set loading states to true and clear previous results/selections

@@ -2,7 +2,9 @@ import React from 'react';
 import './Privacy.css';
 import BackButton from './BackButton';
 
+// defines privacy functional component, displays data privacy information
 const Privacy = () => {
+  // jsx for rendering the privacy page ui
   return (
     <div className="container">
       <BackButton />
@@ -26,4 +28,5 @@ const Privacy = () => {
   );
 };
 
+// exports privacy component to make it available for use in other parts of application
 export default Privacy;

@@ -2,8 +2,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh; /* Full viewport height */
-    background: linear-gradient(135deg, #252f3b, #252d3b); /* Elegant gradient */
+    height: 100vh;
+    background: linear-gradient(135deg, #252f3b, #252d3b);
   }
   
   .card {
@@ -37,7 +37,7 @@
     padding: 12px 24px;
     font-size: 16px;
     border: none;
-    border-radius: 30px; /* Rounded buttons */
+    border-radius: 30px;
     cursor: pointer;
     transition: background 0.3s ease;
     color: white;
@@ -45,5 +45,5 @@
   }
   
   .btn:hover {
-    background: #252f3b; /* Button hover effect */
+    background: #252f3b;
   }  

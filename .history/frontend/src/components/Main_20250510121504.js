@@ -15,6 +15,7 @@ const mockProducts = [
     { id: 'prodI', title: 'ASUS VivoBook 15 M1502YA', price: '£650.00', link: '#i', numericPrice: 650.00 },
     { id: 'prodJ', title: 'DELL INSPION 16 5640', price: '£750.00', link: '#j', numericPrice: 750.00 },
     { id: 'prodK', title: 'i7010 No HD Laptop', price: '£7.99', link: '#k', numericPrice: 7.99 },
+    // ensure all product ids are unique in a real dataset for correct keying
     { id: 'prodL', title: 'Jumper Pro 15.6 Inch HD Laptop', price: '£1350.00', link: '#l', numericPrice: 1350.00 },
     { id: 'prodM', title: 'HP 14 Inch Laptop - Intel Core i5, 8GB', price: '£349.00', link: '#m', numericPrice: 349.00 },
     { id: 'prodN', title: 'Microsoft Surface Laptop 4 i7-1185G7 Notebook', price: '£1867.91', link: '#n', numericPrice: 1867.91 },
@@ -64,169 +65,162 @@ async function authenticatedFetch(url, options = {}) {
 
 
 // --- main component ---
-// defines main component, which displays products and handles bnpl flow
+// defines main component, which displays products and handles bnpl (buy now, pay later) flow
 const Main = () => {
     // --- state variables ---
-    // state to hold source array of all products (initialised with mockdata)
-    const products = mockProducts;
-    // state to hold products after applying filters (search, sort, price range)
+    const productsData  = useState(mockProducts);
+    // state to hold products after filtering based on search, sort, and price range
     const [filteredProducts, setFilteredProducts] = useState(mockProducts);
-    // state for search term entered by user in search input
+    // state for the search term entered by the user
     const [searchTerm, setSearchTerm] = useState('');
-    // state for selected sort option (e.g., 'price-asc', 'name')
+    // state for the selected sort option (e.g., price, name)
     const [sortOption, setSortOption] = useState('');
-    // state for price range filter, stored as an array [minprice, maxprice]
+    // state for the price range filter, an array [minPrice, maxPrice]
     const [priceRange, setPriceRange] = useState([0, 2000]);
     // state to control how many products are currently visible on page (for "load more")
     const [visibleProducts, setVisibleProducts] = useState(9);
-    // defines number of additional products to display when "load more" button is clicked
+    // defines number of additional products to display when "load more" is clicked
     const productsToShowIncrement = 9;
 
-    // state related to product modal and bnpl process
-    // state for currently selected product object (to display in detail modal)
+    // state related to product modal and bnpl (buy now, pay later) process
+    // state for the currently selected product (to display in the modal)
     const [selectedProduct, setSelectedProduct] = useState(null);
     // state to indicate if bnpl assessment is currently loading/processing
     const [assessmentLoading, setAssessmentLoading] = useState(false);
-    // state to store result of bnpl assessment (includes success/failure and entitlements)
+    // state to store result of bnpl assessment (success/failure, entitlements)
     const [assessmentResult, setAssessmentResult] = useState(null);
-    // state for payment term (3 months, 6 months, etc.) selected by user after assessment
+    // state for payment term selected by user (e.g., 3 months, 6 months) after assessment
     const [selectedTerm, setSelectedTerm] = useState(null);
     // state to indicate if order confirmation is currently processing
     const [orderLoading, setOrderLoading] = useState(false);
 
-    // react-router hook for programmatic navigation between pages
+    // react-router hook for programmatic navigation
     const navigate = useNavigate();
 
     // --- effect for filtering and sorting products ---
-    // this useeffect hook runs whenever searchterm, sortoption, pricerange, or source products list change
     useEffect(() => {
-        // starts with all products from 'products' state (which holds mockproducts or could hold fetched data)
-        let updatedProducts = products.filter(product => {
-                // safety check: ensure product and product.title are valid before calling tolowercase
-                if (!product || typeof product.title !== 'string') {
-                    console.warn('Skipping product with missing or invalid title during filter:', product);
-                    return false; // exclude this item from filtered list
-                }
-                return product.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-                       // further filters products based on selected price range
-                       product.numericPrice >= priceRange[0] &&
-                       product.numericPrice <= priceRange[1];
-            });
-        // applies sorting based on selected sortoption
+        // starts with all products from productsdata (which currently holds mockproducts)
+        let updatedProducts = productsData // uses productsData as source
+            // filters products based on search term
+            .filter(product =>
+                product.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
+                // filters products based on selected price range
+                product.numericPrice >= priceRange[0] &&
+                product.numericPrice <= priceRange[1]
+            );
+        // applies sorting based on the selected sortoption
         if (sortOption === 'price-asc') updatedProducts.sort((a, b) => a.numericPrice - b.numericPrice); // sort by price: low to high
         else if (sortOption === 'price-desc') updatedProducts.sort((a, b) => b.numericPrice - a.numericPrice); // sort by price: high to low
         else if (sortOption === 'name') updatedProducts.sort((a, b) => a.title.localeCompare(b.title)); // sort by name: alphabetically
 
-        setFilteredProducts(updatedProducts); // updates state with filtered and sorted products
+        setFilteredProducts(updatedProducts); // updates the state with the filtered and sorted products
         setVisibleProducts(productsToShowIncrement); // resets number of visible products to initial increment when filters change
-    }, [searchTerm, sortOption, priceRange, products, productsToShowIncrement]); // dependencies for useeffect
+    }, [searchTerm, sortOption, priceRange, productsData, productsToShowIncrement]); // dependencies for useeffect
 
-   // --- event handlers ---
    // handles "load more" button click to display additional products
    const handleShowMore = () => {
-        setVisibleProducts(prevVisibleProducts => { // uses functional update form for setting state based on previous state
-            // calculates new count of visible products by adding predefined increment
+        setVisibleProducts(prevVisibleProducts => { // uses functional update form for setting state
+            // calculates new count of visible products by adding increment
             const newCount = prevVisibleProducts + productsToShowIncrement;
             // ensures new count does not exceed total number of available filtered products
             return Math.min(newCount, filteredProducts.length);
         });
     };
 
-    // opens product detail modal and initialises/resets modal-specific states
+    // opens product detail modal and initialises modal-specific states to default values
     const openModal = (product) => {
         setSelectedProduct(product); // sets product to be displayed in modal
-        setAssessmentLoading(false); // resets assessment loading status for modal
-        setAssessmentResult(null); // clears any previous assessment result from modal
+        setAssessmentLoading(false); // resets assessment loading status
+        setAssessmentResult(null); // clears any previous assessment result
         setSelectedTerm(null); // clears any previously selected payment term
-        setOrderLoading(false); // resets order processing status for modal
+        setOrderLoading(false); // resets order processing status
     };
 
     // closes product detail modal by clearing selected product state
     const closeModal = () => {
-        setSelectedProduct(null); // clears product from state, which hides modal
-        // note: could also consider resetting assessmentresult and selectedterm here for a completely fresh modal next time
+        setSelectedProduct(null); // clears product from state, hides modal
     };
 
     // handles bnpl assessment button click within product modal
     const handleBnplAssessment = async () => {
-        if (!selectedProduct) return; // exits if no product is currently selected in modal
-        // set loading states to true and clear previous results/selections
+        if (!selectedProduct) return; // exits if no product is currently selected
+        // set loading states and clear previous results
         setAssessmentLoading(true); setAssessmentResult(null); setSelectedTerm(null); setOrderLoading(false);
 
-        // makes an authenticated api call to backend endpoint for credit assessment
+        // makes an authenticated api call to backend for credit assessment
         const response = await authenticatedFetch('/api/assess_credit', {
             method: 'POST', // http post method
-            body: JSON.stringify({ // data payload for assessment
-                requested_loan_amount: selectedProduct.numericPrice, // loan amount is product's price
-                requested_loan_term: null // term is chosen by user after a successful assessment
+            body: JSON.stringify({ // data sent to backend
+                requested_loan_amount: selectedProduct.numericPrice, // loan amount is product price
+                requested_loan_term: null // payment term will be chosen by user after successful assessment
             }),
         });
         let resultData; // variable to hold parsed json response
         try {
              resultData = await response.json(); // attempt to parse response as json
-        } catch (e) { // catches errors if json parsing fails
+        } catch (e) { // catches errors during json parsing
              console.error('Failed to parse assessment JSON response:', e);
              resultData = { success: false, message: 'Received invalid response from server.' }; // fallback error data
         }
 
         setAssessmentLoading(false); // assessment process finished, reset loading state
         if (response.ok && resultData.success) { // if api call was successful and backend confirms success
-             setAssessmentResult({ ...resultData, success: true }); // update assessment result state with data from backend
+             setAssessmentResult({ ...resultData, success: true }); // update assessment result state
         } else { // if api call failed or backend reported failure
              console.error('Assessment API call failed:', resultData);
-             setAssessmentResult({ success: false, message: resultData.message || 'Assessment failed.' }); // set error message in state
-             if(response.status === 401) { // if error was specifically due to authentication (401 unauthorised)
-                navigate('/login'); // redirect user to login page
+             setAssessmentResult({ success: false, message: resultData.message || 'Assessment failed.' }); // set error message
+             if(response.status === 401) { // if error was due to authentication
+                navigate('/login'); // redirect to login page
              }
         }
     };
 
-    // handles confirm bnpl order button click after a successful assessment and payment term selection
+    // handles confirm bnpl order button click after a successful assessment and term selection
     const handleProceedWithBnpl = async () => {
-        // checks if all necessary conditions are met before proceeding with order
+        // checks if all necessary conditions are met to proceed with order
         if (!selectedProduct || !assessmentResult?.success || !selectedTerm || orderLoading) {
-             let alertMessage = 'Cannot proceed: '; // base for user alert message
-             // appends specific reasons if conditions are not met
+             let alertMessage = 'Cannot proceed: '; // base for alert message
+             // append specific reasons for not proceeding
              if (!selectedProduct) alertMessage += 'No product selected. ';
              if (!assessmentResult?.success) alertMessage += 'Assessment not approved. ';
              if (!selectedTerm) alertMessage += 'Please select a payment term. ';
              console.error('Proceed conditions not met:', { assessmentResult, selectedTerm, selectedProduct, orderLoading });
-             alert(alertMessage.trim()); // displays an informative alert to user
-        return; // exits function if conditions for proceeding are not met
+             alert(alertMessage.trim()); // show an informative alert to user
+        return; // exit function if conditions not met
         }
 
         console.log(`Confirming order: Product=${selectedProduct.title}, Term=${selectedTerm}, AssessID=${assessmentResult.assessmentId}`); // debug log
-        setOrderLoading(true); // set loading state to indicate order confirmation is processing
+        setOrderLoading(true); // set loading state for order confirmation
 
-        // makes an authenticated api call to backend endpoint to confirm bnpl order
+        // makes an authenticated api call to backend to confirm bnpl order
         const response = await authenticatedFetch('/api/confirm_bnpl_order', {
             method: 'POST', // http post method
-            body: JSON.stringify({ // data payload for order confirmation
+            body: JSON.stringify({ // data sent to backend for order confirmation
                 product: { // details of product being ordered
-                    id: selectedProduct.id || null, // product's unique id
-                    title: selectedProduct.title, // product's title
-                    numericPrice: selectedProduct.numericPrice // product's numeric price
+                    id: selectedProduct.id || null, // product id
+                    title: selectedProduct.title, // product title
+                    numericPrice: selectedProduct.numericPrice // product price
                 },
-                term: selectedTerm, // payment term selected by user (e.g., 3, 6, 12 months)
+                term: selectedTerm, // payment term selected by user
                 assessmentId: assessmentResult.assessmentId, // id from successful credit assessment
             }),
         });
-        let resultData; // variable for parsed json response
+        let resultData; // for parsed json response
         try {
              resultData = await response.json(); // attempt to parse response
-        } catch(e) { // catch errors if json parsing fails
+        } catch(e) { // catch parsing errors
             console.error('Failed to parse order confirmation JSON response:', e);
-            resultData = { success: false, message: 'Received invalid response from server.' }; // fallback error data
+            resultData = { success: false, message: 'Received invalid response from server.' }; // fallback
         }
 
-        setOrderLoading(false); // reset order loading state as api call is complete
+        setOrderLoading(false); // reset order loading state
         if (response.ok && resultData.success) { // if order confirmed successfully on backend
             alert(`Order confirmed (ID: ${resultData.orderId})! Redirecting to dashboard.`); // success alert
             closeModal(); // close product detail modal
-            navigate('/dashboard'); // navigate user to their dashboard page
+            navigate('/dashboard'); // navigate user to dashboard
         } else { // if order confirmation failed
             console.error('Order Confirmation API call failed:', resultData);
-            alert(`Order could not be confirmed: ${resultData.message || 'Please try again.'}`); // error alert to user
+            alert(`Order could not be confirmed: ${resultData.message || 'Please try again.'}`); // error alert
         }
     };
 
