@@ -84,7 +84,7 @@ const Dashboard = () => {
         // cleanup function for the effect: runs when the component unmounts
         return () => { isMounted = false; console.log('Entitlements fetch effect cleanup.'); };
      // dependency array for useeffect
-    }, [navigate]);
+    }, []);
     // --- -------------------------------------------- ---
 
 

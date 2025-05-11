@@ -65,7 +65,7 @@ const BufferBag = () => {
             const response = await authenticatedFetch('/api/buffer/balance'); // call the backend endpoint
 
             if (!response) { // check if response is unexpectedly null/undefined
-                console.error('BufferBag.js: authenticatedFetch is undefined or null.'); // critical error
+                console.error('BufferBag.js: authenticatedFetch returned undefined or null.'); // critical error
                 throw new Error('Failed to fetch: No response from server.');
             }
             if (typeof response.json !== 'function') { // check if response has a .json method
@@ -80,7 +80,7 @@ const BufferBag = () => {
             if (response.ok && data && data.success && typeof data.balance !== 'undefined') {
                 setBalance(data.balance); // update the balance state
             } else { // if api call was not successful or data is missing
-                const errorMessage = data?.message || `API error: Could not load buffer balance (Status: ${response.status}, Ok: ${response.ok}, Success: ${data?.success}, Balance defined: ${typeof data?.balance !== 'undefined'})`;
+                const errorMessage = data?.message || `API error: Failed to load buffer balance (Status: ${response.status}, Ok: ${response.ok}, Success: ${data?.success}, Balance defined: ${typeof data?.balance !== 'undefined'})`;
                 console.error('BufferBag.js: API error or !response.ok for balance:', errorMessage, 'Full data:', data, 'Full response:', response); // error for api failure
                 throw new Error(errorMessage); // throw an error to be caught by catch block
             }

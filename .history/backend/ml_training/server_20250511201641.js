@@ -750,7 +750,7 @@ app.post('/api/spending-limit', authenticateUser, async (req, res) => {
     const userId = req.user.id; // authenticated user id
     const { spendingLimit } = req.body; // new limit from request (can be a number or null)
 
-    console.log(`\n Setting spending limit for User ID: ${userId} to: ${spendingLimit === null ? 'NULL (Remove)' : `£${Number(spendingLimit).toFixed(2)}`}`);
+    console.log(`\n⚙️ Setting spending limit for User ID: ${userId} to: ${spendingLimit === null ? 'NULL (Remove)' : `£${Number(spendingLimit).toFixed(2)}`}`);
 
     let newLimitValue = null; // default to null (meaning remove the limit)
     if (spendingLimit !== null) { // if a specific limit value is provided
@@ -956,7 +956,7 @@ app.post('/api/make_repayment', authenticateUser, async (req, res) => {
 // gets the authenticated user's current credit entitlements and available credit
 app.get('/api/current_entitlements', authenticateUser, async (req, res) => {
     const userId = req.user.id; // authenticated user id
-    console.log(`\n Fetching current entitlements & available credit for User: ${userId}`);
+    console.log(`\n⚙️ Fetching current entitlements & available credit for User: ${userId}`);
     try {
         // sql to get latest formal assessment
         const assessmentSql = `SELECT assessment_id, credit_tier, credit_limit, calculated_terms FROM credit_assessments WHERE user_id = ? ORDER BY assessment_timestamp DESC LIMIT 1`;

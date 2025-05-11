@@ -3,7 +3,7 @@ import mysql from 'mysql2/promise'; // mysql database driver with promise suppor
 import cors from 'cors'; // middleware for enabling cross-origin resource sharing
 import bcrypt from 'bcrypt'; // library for hashing passwords securely
 import jwt from 'jsonwebtoken'; // for creating and verifying json web tokens (for authentication)
-import dotenv from 'dotenv';
+import dotenv from 'dotenv'; // Load .env file variables FIRST
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid'; // plaid sdk for bank interactions
 import fetch from 'node-fetch'; // library for making http requests to other services
 
@@ -81,7 +81,7 @@ try {
 // checks if a given password string meets complexity requirements
 const isValidPassword = (password) => {
     if (!password) return false; // false if no password
-    const passwordRegex = /^(?=.*\d.*\d)(?=.*[!@#$%^&*]).{8,}$/; // min 8 chars, 2 digits, 1 special
+    const passwordRegex = /^(?=.*\d.*\d)(?=.*[!@#$%^&*]).{8,}$/; // regex: min 8 chars, 2 digits, 1 special
     return passwordRegex.test(password); // test password against regex
 };
 
@@ -750,7 +750,7 @@ app.post('/api/spending-limit', authenticateUser, async (req, res) => {
     const userId = req.user.id; // authenticated user id
     const { spendingLimit } = req.body; // new limit from request (can be a number or null)
 
-    console.log(`\n Setting spending limit for User ID: ${userId} to: ${spendingLimit === null ? 'NULL (Remove)' : `£${Number(spendingLimit).toFixed(2)}`}`);
+    console.log(`\n⚙️ Setting spending limit for User ID: ${userId} to: ${spendingLimit === null ? 'NULL (Remove)' : `£${Number(spendingLimit).toFixed(2)}`}`);
 
     let newLimitValue = null; // default to null (meaning remove the limit)
     if (spendingLimit !== null) { // if a specific limit value is provided
@@ -956,7 +956,7 @@ app.post('/api/make_repayment', authenticateUser, async (req, res) => {
 // gets the authenticated user's current credit entitlements and available credit
 app.get('/api/current_entitlements', authenticateUser, async (req, res) => {
     const userId = req.user.id; // authenticated user id
-    console.log(`\n Fetching current entitlements & available credit for User: ${userId}`);
+    console.log(`\n⚙️ Fetching current entitlements & available credit for User: ${userId}`);
     try {
         // sql to get latest formal assessment
         const assessmentSql = `SELECT assessment_id, credit_tier, credit_limit, calculated_terms FROM credit_assessments WHERE user_id = ? ORDER BY assessment_timestamp DESC LIMIT 1`;

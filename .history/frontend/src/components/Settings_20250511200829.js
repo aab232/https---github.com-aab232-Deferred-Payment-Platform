@@ -105,7 +105,7 @@ const Settings = () => {
     // displays a confirmation dialog before proceeding with account deletion
     if (
       window.confirm(
-        'Are you sure you want to delete the account? This action is irreversible.'
+        'Are you sure to delete the account? This action is irreversible.'
       )
     ) { // if user confirms
       try {

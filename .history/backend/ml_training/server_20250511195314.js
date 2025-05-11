@@ -3,7 +3,7 @@ import mysql from 'mysql2/promise'; // mysql database driver with promise suppor
 import cors from 'cors'; // middleware for enabling cross-origin resource sharing
 import bcrypt from 'bcrypt'; // library for hashing passwords securely
 import jwt from 'jsonwebtoken'; // for creating and verifying json web tokens (for authentication)
-import dotenv from 'dotenv';
+import dotenv from 'dotenv'; // Load .env file variables FIRST
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid'; // plaid sdk for bank interactions
 import fetch from 'node-fetch'; // library for making http requests to other services
 
@@ -64,15 +64,15 @@ try {
     // Test connection (async)
     dbPool.getConnection() // attempts to get a connection from the pool
         .then(connection => {
-            console.log(' MySQL Pool connected successfully!'); // logs success
+            console.log('✅ MySQL Pool connected successfully!'); // logs success
             connection.release(); // releases the connection
         })
         .catch(err => {
-            console.error(' MySQL Pool initial connection error:', err); // logs error if connection fails
+            console.error('❌ MySQL Pool initial connection error:', err); // logs error if connection fails
             process.exit(1); // exits if database is not reachable
         });
 } catch (err) {
-     console.error(' Failed to create MySQL Pool:', err); // logs error if pool creation fails
+     console.error('❌ Failed to create MySQL Pool:', err); // logs error if pool creation fails
      process.exit(1); // exits if pool creation fails
 }
 // --- --------------------- ---
@@ -81,7 +81,7 @@ try {
 // checks if a given password string meets complexity requirements
 const isValidPassword = (password) => {
     if (!password) return false; // false if no password
-    const passwordRegex = /^(?=.*\d.*\d)(?=.*[!@#$%^&*]).{8,}$/; // min 8 chars, 2 digits, 1 special
+    const passwordRegex = /^(?=.*\d.*\d)(?=.*[!@#$%^&*]).{8,}$/; // regex: min 8 chars, 2 digits, 1 special
     return passwordRegex.test(password); // test password against regex
 };
 
@@ -259,10 +259,10 @@ app.post('/register', async (req, res) => {
             newUser.monthly_spending_limit
         ];
         const [result] = await dbPool.query(sql, values); // execute insert query
-        console.log(` User Registered: ${email} (ID: ${result.insertId})`); // log successful registration
+        console.log(`✅ User Registered: ${email} (ID: ${result.insertId})`); // log successful registration
         res.status(201).json({ success: true, message: 'Registration successful!' }); // send success response
     } catch (error) {
-        console.error(' Registration Server Error:', error); // log error if registration fails
+        console.error('❌ Registration Server Error:', error); // log error if registration fails
         if (error.code === 'ER_DUP_ENTRY') { // handle specific db error for duplicate email
             return res.status(409).json({ success: false, message: 'Email already registered.' });
         }
@@ -296,10 +296,10 @@ app.post('/login', async (req, res) => {
         const payload = { id: user.user_id, email: user.email }; // data for jwt payload
         const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' }); // create and sign jwt, expires in 8 hours
 
-        console.log(` User Logged In: ${user.email} (ID: ${user.user_id})`); // log successful login
+        console.log(`✅ User Logged In: ${user.email} (ID: ${user.user_id})`); // log successful login
         res.status(200).json({ success: true, message: 'Login successful!', token: token }); // send success response with token
     } catch (error) {
-        console.error(' Login Server Error:', error); // log error if login fails
+        console.error('❌ Login Server Error:', error); // log error if login fails
         res.status(500).json({ success: false, message: 'Login failed due to a server issue.' }); // generic error
     }
 });
@@ -307,13 +307,13 @@ app.post('/login', async (req, res) => {
 // endpoint for frontend to request a plaid link_token
 app.post('/api/create_link_token', authenticateUser, async (req, res) => {
     const userId = req.user.id; // authenticated user id
-    console.log(` Creating Plaid link token request for User: ${userId}`);
+    console.log(`⚙️ Creating Plaid link token request for User: ${userId}`);
     const request = { user: { client_user_id: userId.toString() }, client_name: 'DPP Finance Demo', language: 'en', products: ['auth', 'transactions', 'identity', 'liabilities'], country_codes: ['GB'] }; // plaid request parameters
     try {
         const response = await plaidClient.linkTokenCreate(request); // call plaid api
         res.json({ link_token: response.data.link_token, success: true }); // send token to client
     } catch (error) {
-        console.error(' Plaid link token creation error:', error.response?.data || error.message); // log plaid error
+        console.error('❌ Plaid link token creation error:', error.response?.data || error.message); // log plaid error
         res.status(500).json({ success: false, message: 'Could not create Plaid link token.' }); // generic error to client
     }
 });
@@ -338,14 +338,14 @@ app.post('/api/exchange_public_token', authenticateUser, async (req, res) => {
             console.warn(`Attempted to store simulated Plaid tokens for non-existent User ID: ${userId}`);
             return res.status(404).json({ success: false, message: 'User not found.' });
         }
-        console.log(` SIMULATED Plaid tokens stored in DB for User ID: ${userId}`); // log success
+        console.log(`✅ SIMULATED Plaid tokens stored in DB for User ID: ${userId}`); // log success
         // adjust message based on whether it was an explicit simulation (publictoken was null)
         const message = (publicToken === null)
             ? 'Bank account link simulated successfully (explicit frontend simulation).'
             : 'Bank account linked (Simulated Plaid exchange & DB storage).';
         res.json({ success: true, message: message }); // success response
     } catch (dbError) {
-        console.error(` DB Error storing simulated Plaid tokens for User ID ${userId}:`, dbError);
+        console.error(`❌ DB Error storing simulated Plaid tokens for User ID ${userId}:`, dbError);
         res.status(500).json({ success: false, message: 'Database error during simulated token storage.' }); // db error response
     }
 });
@@ -371,7 +371,7 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
             const [[latestCreditDataResult], [dbUserDataResult]] = await Promise.all([dbPool.query(creditSql, [userId]), dbPool.query(userSql, [userId])]); // fetch concurrently
             latestCreditData = latestCreditDataResult || {}; dbUserData = dbUserDataResult; // assign with fallbacks
             if (!dbUserData) { // user must exist
-                console.error(` User profile not found for User ID: ${userId}`);
+                console.error(`❌ User profile not found for User ID: ${userId}`);
                 throw new Error('User profile data missing for assessment.');
             }
             console.log('      Fetched User Data:', dbUserData); console.log('      Fetched Latest Credit Data:', latestCreditData);
@@ -396,12 +396,12 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
                 if (key !== 'employment_status' && key !== 'cb_person_default_on_file') { rawFeaturesForModel[key] = Number(rawFeaturesForModel[key] || 0); if (isNaN(rawFeaturesForModel[key])) rawFeaturesForModel[key] = 0; }
                 else if (!rawFeaturesForModel[key]) { rawFeaturesForModel[key] = (key === 'employment_status' ? 'No' : 'N');}
             });
-            console.log('       Features prepared (DB ONLY):', JSON.stringify(rawFeaturesForModel));
+            console.log('      ✅ Features prepared (DB ONLY):', JSON.stringify(rawFeaturesForModel));
         } catch (dataPrepError) {
-            console.error(` DB Error for User ${userId}:`, dataPrepError); return res.status(500).json({ success: false, message: `Error preparing data: ${dataPrepError.message}` });}
+            console.error(`❌ DB Error for User ${userId}:`, dataPrepError); return res.status(500).json({ success: false, message: `Error preparing data: ${dataPrepError.message}` });}
 
         console.log('   4. Calling Python Prediction Service...');
-        if (!PYTHON_PREDICTION_URL) { console.error(' PYTHON_PREDICTION_SERVICE_URL is not set.'); throw new Error('Prediction service configuration missing.');} // check if url is set
+        if (!PYTHON_PREDICTION_URL) { console.error('❌ PYTHON_PREDICTION_SERVICE_URL is not set.'); throw new Error('Prediction service configuration missing.');} // check if url is set
         try {
             const predRes = await fetch(PYTHON_PREDICTION_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ features: rawFeaturesForModel }) }); // call python service
             if (!predRes.ok) { const errBody = await predRes.text(); throw new Error(`Prediction service HTTP Error: ${predRes.status}. Body: ${typeof errBody === 'string' ? errBody : 'N/A'}`);} // handle http errors
@@ -411,7 +411,7 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
             console.log(`      Received Risk Score: ${riskScore}`);
             if (riskScore === null || typeof riskScore !== 'number' || isNaN(riskScore)) throw new Error('Invalid risk score from prediction service.'); // validate score
         } catch (fetchError) {
-            console.error(' Python Service Error:', fetchError); throw new Error(`Assessment service unavailable: ${fetchError.message}`);}
+            console.error('❌ Python Service Error:', fetchError); throw new Error(`Assessment service unavailable: ${fetchError.message}`);}
 
         console.log('   5. Mapping score and applying adjustments...');
         entitlements = mapScoreAndApplyAdjustments(riskScore, db_default_flag, original_db_employment_status, raw_credit_utilization_ratio); // map score to entitlements
@@ -433,17 +433,17 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
                 ];
                 const [insRes] = await connection.query(assessSql, assessVals); // execute insert
                 assessmentIdForOrder = insRes.insertId; // get new assessment id
-                console.log(`       Assessment record created (ID: ${assessmentIdForOrder})`);
+                console.log(`      ✅ Assessment record created (ID: ${assessmentIdForOrder})`);
 
                 const updUserLimitSql = 'UPDATE users SET current_credit_limit = ? WHERE user_id = ?'; // sql to update user's limit
                 const [updRes] = await connection.query(updUserLimitSql, [entitlements.limit.toFixed(2), userId]); // execute update
                 if (updRes.affectedRows === 0) throw new Error('Failed to update user\'s credit limit.'); // error if no update
-                console.log(`       User ${userId}'s current_credit_limit updated to ${entitlements.limit.toFixed(2)}`);
+                console.log(`      ✅ User ${userId}'s current_credit_limit updated to ${entitlements.limit.toFixed(2)}`);
 
                 await connection.commit(); // commit transaction
                 console.log('      DB Transaction Committed (Assessment Record + User Limit Update).');
             } catch (dbStoreError) {
-                console.error(` DB Error during storage/update for User ${userId}:`, dbStoreError);
+                console.error(`❌ DB Error during storage/update for User ${userId}:`, dbStoreError);
                 if (connection) {
                     try { await connection.rollback(); console.log('      DB Transaction Rolled Back.'); }
                     catch (rollbackErr) { console.error('      Error during Rollback:', rollbackErr); }
@@ -465,7 +465,7 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
             console.warn('   Skipping storage due to invalid score or entitlement error.');
         }
 
-        console.log(` Assessment complete (SIMULATION MODE) for User: ${userId}`);
+        console.log(`✅ Assessment complete (SIMULATION MODE) for User: ${userId}`);
         // fetch user's current used amount for accurate available_credit in response
         const [currentUserDataForResponse] = await dbPool.query('SELECT used_credit_amount FROM users WHERE user_id = ?', [userId]);
         const finalUsedAmount = parseFloat(currentUserDataForResponse[0]?.used_credit_amount || 0);
@@ -484,7 +484,7 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
         });
 
     } catch (error) { // main catch block for the route
-        console.error(` Overall Assessment Error for User ${userId}:`, error);
+        console.error(`❌ Overall Assessment Error for User ${userId}:`, error);
         let statusCode = 500; // default error status
         // set specific status based on error type
         if (error.message?.includes('User profile data missing')) statusCode = 404;
@@ -508,7 +508,7 @@ app.post('/api/assess_credit', authenticateUser, async (req, res) => {
 // provides a quick, non-persisted simulated assessment (for dashboard estimate feature)
 app.post('/api/assess_credit_simulated', authenticateUser, async (req, res) => {
     const userId = req.user.id; // authenticated user
-    console.log(`\n SIMULATED Dashboard Assessment request User: ${userId}`);
+    console.log(`\n⚙️ SIMULATED Dashboard Assessment request User: ${userId}`);
     const { requested_loan_amount = 1000, requested_loan_term = 6 } = req.body; // loan details with defaults
     console.log(`   Dashboard estimate using Amount: ${requested_loan_amount}, Term: ${requested_loan_term}`);
     // declare variables for simulation
@@ -546,9 +546,9 @@ app.post('/api/assess_credit_simulated', authenticateUser, async (req, res) => {
                 if (k !== 'employment_status' && k !== 'cb_person_default_on_file') { rawFeaturesForModel[k] = Number(rawFeaturesForModel[k] || 0); if (isNaN(rawFeaturesForModel[k])) rawFeaturesForModel[k] = 0;}
                 else if (!rawFeaturesForModel[k]) { rawFeaturesForModel[k] = (k === 'employment_status' ? 'No' : 'N');}
             });
-            console.log('       Raw features prepared (SIMULATED):', JSON.stringify(rawFeaturesForModel));
+            console.log('      ✅ Raw features prepared (SIMULATED):', JSON.stringify(rawFeaturesForModel));
         } catch (dataPrepError) {
-            console.error('    Error preparing features (SIM):', dataPrepError); return res.status(500).json({ success: false, message: 'Internal error preparing simulation data.' });}
+            console.error('   ❌ Error preparing features (SIM):', dataPrepError); return res.status(500).json({ success: false, message: 'Internal error preparing simulation data.' });}
 
         console.log('   2. Calling Python service for simulation...');
         if (!PYTHON_PREDICTION_URL) return res.status(503).json({ success: false, message: 'Prediction service configuration error.' }); // check service url
@@ -559,19 +559,19 @@ app.post('/api/assess_credit_simulated', authenticateUser, async (req, res) => {
             riskScore = predResult.risk_score; // get score
             console.log(`      Simulated Score: ${riskScore}`);
         } catch (fetchError) {
-            console.error(`    Python service error (SIM): ${fetchError.message}`); return res.status(503).json({ success: false, message: 'Prediction service unavailable for simulation.' });}
+            console.error(`   ❌ Python service error (SIM): ${fetchError.message}`); return res.status(503).json({ success: false, message: 'Prediction service unavailable for simulation.' });}
         if (riskScore === null || typeof riskScore !== 'number' || isNaN(Number(riskScore))) return res.status(500).json({success: false, message: 'Invalid score received from simulation service.'}); // validate score
 
         console.log('   3. Mapping simulated score and applying adjustments...');
         entitlements = mapScoreAndApplyAdjustments(riskScore, db_default_flag, original_db_employment_status, raw_credit_utilization_ratio); // map score
         if (entitlements.error) {
-            console.error(`    Error mapping simulated score: ${entitlements.error}`); return res.status(500).json({success: false, message: 'Error calculating simulated entitlements.'});}
+            console.error(`   ❌ Error mapping simulated score: ${entitlements.error}`); return res.status(500).json({success: false, message: 'Error calculating simulated entitlements.'});}
         console.log(`      Simulated Entitlements: Tier ${entitlements.tier}, Limit ${entitlements.limit.toFixed(2)}, Terms [${entitlements.terms.join(',')}]`);
 
-        console.log(` SIMULATED Dashboard Assessment complete for User: ${userId}.`);
+        console.log(`✅ SIMULATED Dashboard Assessment complete for User: ${userId}.`);
         res.status(200).json({ success: true, entitlements: { tier: entitlements.tier, limit: entitlements.limit, terms: entitlements.terms }, assessmentId: null, simulated: true }); // respond (no assessmentid)
     } catch (error) {
-        console.error(` SIMULATED Assessment Flow Error for User ${userId}:`, error);
+        console.error(`❌ SIMULATED Assessment Flow Error for User ${userId}:`, error);
         res.status(500).json({ success: false, message: error.message || 'Simulation request failed.' }); }
 });
 
@@ -580,7 +580,7 @@ app.post('/api/confirm_bnpl_order', authenticateUser, async (req, res) => {
     const userId = req.user.id; // authenticated user
     const { product, term, assessmentId } = req.body; // order details
     let connection = null; // db connection for transaction
-    console.log(`\n Confirming BNPL order Request - User: ${userId}, Assessment ID: ${assessmentId}, Term: ${term}`);
+    console.log(`\n⚙️ Confirming BNPL order Request - User: ${userId}, Assessment ID: ${assessmentId}, Term: ${term}`);
     console.log('   Product Details Received:', JSON.stringify(product));
     // validate incoming data
     if (!product || typeof product !== 'object' || typeof product.numericPrice !== 'number' || isNaN(product.numericPrice) || product.numericPrice <= 0 || !product.title || typeof term !== 'number' || term <= 0) {
@@ -619,16 +619,16 @@ app.post('/api/confirm_bnpl_order', authenticateUser, async (req, res) => {
         const orderSql = `INSERT INTO orders (user_id, assessment_id, product_title, product_price, loan_amnt, selected_term_months, remaining_balance, order_status, next_payment_due_date, order_timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         const orderValues = [orderData.user_id, orderData.assessment_id, orderData.product_title, orderData.product_price, orderData.loan_amnt, orderData.selected_term_months, orderData.remaining_balance, orderData.order_status, orderData.next_payment_due_date, orderData.order_timestamp];
         const [orderResult] = await connection.query(orderSql, orderValues); const orderId = orderResult.insertId; // insert order
-        console.log(`       BNPL Order (ID: ${orderId}) record created successfully.`);
+        console.log(`      ✅ BNPL Order (ID: ${orderId}) record created successfully.`);
         // update user's used credit amount
         const updateUsedAmountSql = 'UPDATE users SET used_credit_amount = used_credit_amount + ? WHERE user_id = ?';
         const [updateResult] = await connection.query(updateUsedAmountSql, [orderAmount.toFixed(2), userId]);
         if (updateResult.affectedRows === 0) { await connection.rollback(); throw new Error('Failed to update user credit usage. Order incomplete.'); }
-        console.log(`       User ID ${userId} used_credit_amount updated (+${orderAmount.toFixed(2)}).`);
+        console.log(`      ✅ User ID ${userId} used_credit_amount updated (+${orderAmount.toFixed(2)}).`);
         await connection.commit(); console.log('   DB Transaction Committed Successfully for Order Confirmation.');
         res.status(201).json({ success: true, message: 'Order confirmed successfully!', orderId: orderId }); // send success
     } catch (error) {
-        console.error(` Error confirming BNPL order for User ${userId}:`, error);
+        console.error(`❌ Error confirming BNPL order for User ${userId}:`, error);
         if (connection) await connection.rollback().catch(rbErr => console.error('Rollback Error:', rbErr));
         let statusCode = 500; if (error.message.includes('User record not found')) statusCode = 404;
         const clientMessage = (process.env.NODE_ENV === 'production') ? 'Failed to process your order due to a server issue.' : error.message;
@@ -644,11 +644,11 @@ app.post('/api/confirm_bnpl_order', authenticateUser, async (req, res) => {
 // fetches active (ongoing) orders for the authenticated user
 app.get('/api/active_orders', authenticateUser, async (req, res) => {
     const userId = req.user.id; // authenticated user id
-    console.log(`\n Fetching active orders request for User ID: ${userId}`);
+    console.log(`\n⚙️ Fetching active orders request for User ID: ${userId}`);
     try {
         const sql = `SELECT order_id, product_title, loan_amnt, remaining_balance, selected_term_months, order_status, order_timestamp, next_payment_due_date FROM orders WHERE user_id = ? AND order_status = 'ACTIVE' ORDER BY order_timestamp DESC`;
         const [orders] = await dbPool.query(sql, [userId]); // execute query
-        console.log(` Found ${orders.length} active orders for User ID: ${userId}`);
+        console.log(`✅ Found ${orders.length} active orders for User ID: ${userId}`);
         const formatToIsoDate = (dateValue) => { // helper to format date strings
              if (!dateValue) return null; // handle null input
              try { const d = new Date(dateValue); if (isNaN(d.getTime())) return null; return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
@@ -662,14 +662,14 @@ app.get('/api/active_orders', authenticateUser, async (req, res) => {
         }));
         res.status(200).json({ success: true, activeOrders: formattedOrders }); // send formatted orders
     } catch (error) {
-        console.error(` DB Error fetching active orders for User ${userId}:`, error);
+        console.error(`❌ DB Error fetching active orders for User ${userId}:`, error);
         res.status(500).json({ success: false, message: 'Error retrieving your active orders.' });}
 });
 
 // gets the user's current self-set monthly spending limit and their overall assessed credit limit
 app.get('/api/spending-limit', authenticateUser, async (req, res) => {
     const userId = req.user.id; // authenticated user id
-    console.log(`\n Fetching spending limit for User ID: ${userId}`);
+    console.log(`\n⚙️ Fetching spending limit for User ID: ${userId}`);
     try {
         const sql = 'SELECT current_credit_limit, monthly_spending_limit FROM users WHERE user_id = ?'; // query for limits
         const [userRows] = await dbPool.query(sql, [userId]); // execute query
@@ -689,7 +689,7 @@ app.get('/api/spending-limit', authenticateUser, async (req, res) => {
         });
 
     } catch (error) {
-        console.error(` Error fetching spending limit for User ${userId}:`, error);
+        console.error(`❌ Error fetching spending limit for User ${userId}:`, error);
         res.status(500).json({ success: false, message: 'Could not retrieve spending limit information.' });
     }
 });
@@ -699,7 +699,7 @@ app.get('/api/spending-limit', authenticateUser, async (req, res) => {
 // fetches all past credit assessments for the authenticated user
 app.get('/api/assessment_history', authenticateUser, async (req, res) => {
     const userId = req.user.id; // authenticated user id
-    console.log(`\n Fetching assessment history for User ID: ${userId}`);
+    console.log(`\n⚙️ Fetching assessment history for User ID: ${userId}`);
     try {
         // sql to select relevant fields from credit_assessments table for the user, ordered by most recent first
         const sql = `
@@ -736,11 +736,11 @@ app.get('/api/assessment_history', authenticateUser, async (req, res) => {
             };
         });
 
-        console.log(`    Found ${formattedHistory.length} assessment records for User ${userId}.`);
+        console.log(`   ✅ Found ${formattedHistory.length} assessment records for User ${userId}.`);
         res.status(200).json({ success: true, history: formattedHistory }); // send history data to client
 
     } catch (error) {
-        console.error(` DB Error fetching assessment history for User ${userId}:`, error.message, error.stack);
+        console.error(`❌ DB Error fetching assessment history for User ${userId}:`, error.message, error.stack);
         res.status(500).json({ success: false, message: 'Error retrieving your assessment history.' });
     }
 });
@@ -750,7 +750,7 @@ app.post('/api/spending-limit', authenticateUser, async (req, res) => {
     const userId = req.user.id; // authenticated user id
     const { spendingLimit } = req.body; // new limit from request (can be a number or null)
 
-    console.log(`\n Setting spending limit for User ID: ${userId} to: ${spendingLimit === null ? 'NULL (Remove)' : `£${Number(spendingLimit).toFixed(2)}`}`);
+    console.log(`\n⚙️ Setting spending limit for User ID: ${userId} to: ${spendingLimit === null ? 'NULL (Remove)' : `£${Number(spendingLimit).toFixed(2)}`}`);
 
     let newLimitValue = null; // default to null (meaning remove the limit)
     if (spendingLimit !== null) { // if a specific limit value is provided
@@ -786,7 +786,7 @@ app.post('/api/spending-limit', authenticateUser, async (req, res) => {
         const successMessage = newLimitValue !== null
             ? `Monthly spending limit successfully set to £${newLimitValue.toFixed(2)}.`
             : 'Monthly spending limit successfully removed.';
-        console.log(`    User ${userId} monthly_spending_limit updated. ${successMessage}`);
+        console.log(`   ✅ User ${userId} monthly_spending_limit updated. ${successMessage}`);
         res.status(200).json({ // send success response
             success: true,
             message: successMessage,
@@ -794,7 +794,7 @@ app.post('/api/spending-limit', authenticateUser, async (req, res) => {
         });
 
     } catch (error) {
-        console.error(` Error setting spending limit for User ${userId}:`, error);
+        console.error(`❌ Error setting spending limit for User ${userId}:`, error);
         res.status(500).json({ success: false, message: error.message || 'Could not update spending limit.' });
     }
 });
@@ -807,7 +807,7 @@ app.post('/api/make_repayment', authenticateUser, async (req, res) => {
     const orderIdInt = parseInt(order_id, 10); // ensure order id is an integer
     const amount = Number(repayment_amount); // ensure repayment amount is a number
 
-    console.log(`\n Processing Repayment Request - OrderID: ${orderIdInt}, Amount: ${repayment_amount}, User: ${userId}`);
+    console.log(`\n⚙️ Processing Repayment Request - OrderID: ${orderIdInt}, Amount: ${repayment_amount}, User: ${userId}`);
     // validate input: order id and amount must be positive numbers
     if (isNaN(orderIdInt) || orderIdInt <= 0 || isNaN(amount) || amount <= 0) {
         console.warn(`   Repayment Validation Failed: OrderID='${order_id}', Amount='${repayment_amount}'`);
@@ -887,26 +887,26 @@ app.post('/api/make_repayment', authenticateUser, async (req, res) => {
         console.log('*** Simulating external payment processing gateway call... SUCCEEDED. ***');
 
         console.log('   Performing Database Updates within Transaction...');
-        // log the repayment itself as a transaction record
+        // 1. log the repayment itself as a transaction record
         const repayDesc = `BNPL Repayment for Order #${orderIdInt} (${order.product_title || 'N/A'})`;
         const repayTxSql = `INSERT INTO transactions (user_id, transaction_type, amount, transaction_status, description, is_buffer_transaction, transaction_date) VALUES (?, ?, ?, ?, ?, ?, NOW())`;
         const [repayTransResult] = await connection.query(repayTxSql, [userId, 'REPAYMENT', amount, 'Completed', repayDesc, 0]);
         console.log(`         -> Repayment Transaction logged (ID: ${repayTransResult.insertId})`);
 
-        // update the order's remaining balance and status
+        // 2. update the order's remaining balance and status
         const newBalance = currentBalance - amount; // calculate new balance
         const newStatus = (newBalance <= epsilon) ? 'PAID_OFF' : 'ACTIVE'; // if balance near zero, mark as paid
         await connection.query('UPDATE orders SET remaining_balance = ?, order_status = ? WHERE order_id = ?', [newBalance.toFixed(2), newStatus, orderIdInt]);
         console.log(`         -> Order ${orderIdInt} updated. New Bal: ${newBalance.toFixed(2)}, Status: ${newStatus}`);
 
-        // update the user's total 'used_credit_amount'
+        // 3. update the user's total 'used_credit_amount'
         const currentUsedAmountDB = parseFloat(user.used_credit_amount);
         const validUsedAmount = isNaN(currentUsedAmountDB) ? 0 : currentUsedAmountDB; // handle nan
         const amountToDecrease = Math.min(amount, validUsedAmount); // prevent reducing below zero
         await connection.query('UPDATE users SET used_credit_amount = GREATEST(0, used_credit_amount - ?) WHERE user_id = ?', [amountToDecrease.toFixed(2), userId]);
         console.log(`         -> User ${userId} used_credit_amount updated by -${amountToDecrease.toFixed(2)}. Previous DB used amount was ~£${validUsedAmount.toFixed(2)}`);
 
-        // process buffer bag contribution
+        // 4. process buffer bag contribution
         const bufferContribution = parseFloat((amount * BUFFER_CONTRIBUTION_PERCENTAGE).toFixed(2));
         console.log(`      BUFFER CONTRIBUTION: £${bufferContribution.toFixed(2)} from repayment of £${amount.toFixed(2)}`);
         if (bufferContribution > 0) { // only if contribution positive
@@ -926,10 +926,10 @@ app.post('/api/make_repayment', authenticateUser, async (req, res) => {
         // ---- end of database updates ----
 
         await connection.commit(); // commit all changes
-        console.log('    Repayment DB Transaction Committed Successfully.');
+        console.log('   ✅ Repayment DB Transaction Committed Successfully.');
         res.status(200).json({ success: true, message: 'Repayment successful!', new_balance: newBalance.toFixed(2), order_status: newStatus, buffer_contribution_added: bufferContribution.toFixed(2) });
     } catch (error) {
-        console.error(` Error processing repayment for Order ${orderIdInt || order_id}, User ${userId}:`, error.message, error.stack ? `\nStack: ${error.stack}` : '');
+        console.error(`❌ Error processing repayment for Order ${orderIdInt || order_id}, User ${userId}:`, error.message, error.stack ? `\nStack: ${error.stack}` : '');
         if (connection) { // if transaction started, rollback
             await connection.rollback().catch(rbErr => console.error('   Rollback Error during catch:', rbErr));
         }
@@ -956,7 +956,7 @@ app.post('/api/make_repayment', authenticateUser, async (req, res) => {
 // gets the authenticated user's current credit entitlements and available credit
 app.get('/api/current_entitlements', authenticateUser, async (req, res) => {
     const userId = req.user.id; // authenticated user id
-    console.log(`\n Fetching current entitlements & available credit for User: ${userId}`);
+    console.log(`\n⚙️ Fetching current entitlements & available credit for User: ${userId}`);
     try {
         // sql to get latest formal assessment
         const assessmentSql = `SELECT assessment_id, credit_tier, credit_limit, calculated_terms FROM credit_assessments WHERE user_id = ? ORDER BY assessment_timestamp DESC LIMIT 1`;
@@ -972,7 +972,7 @@ app.get('/api/current_entitlements', authenticateUser, async (req, res) => {
             const availableCredit = Math.max(0, currentLimit - currentUsedAmount);
             return res.status(200).json({ success: true, entitlements: { status: 'unassessed', tier: null, limit: currentLimit, terms: [], assessmentId: null, used_credit_amount: currentUsedAmount, available_credit: availableCredit }});
         }
-        console.log(` Found latest assessment (ID: ${latestAssessment.assessment_id}) for User: ${userId}`);
+        console.log(`✅ Found latest assessment (ID: ${latestAssessment.assessment_id}) for User: ${userId}`);
         let terms = []; // default to empty array for terms
         try {
             terms = JSON.parse(latestAssessment.calculated_terms || '[]'); // parse terms string
@@ -983,7 +983,7 @@ app.get('/api/current_entitlements', authenticateUser, async (req, res) => {
         console.log(`   User ${userId}: Limit=${currentLimit.toFixed(2)}, Used=${currentUsedAmount.toFixed(2)}, Avail=${availableCredit.toFixed(2)}`);
         res.status(200).json({ success: true, entitlements: { status: 'assessed', tier: latestAssessment.credit_tier, limit: currentLimit, terms: terms, assessmentId: latestAssessment.assessment_id, used_credit_amount: currentUsedAmount, available_credit: availableCredit }});
     } catch (error) {
-        console.error(` DB Error fetching entitlements/credit for User ${userId}:`, error);
+        console.error(`❌ DB Error fetching entitlements/credit for User ${userId}:`, error);
         res.status(500).json({ success: false, message: 'Error retrieving your credit information.' });}
 });
 
@@ -991,7 +991,7 @@ app.get('/api/current_entitlements', authenticateUser, async (req, res) => {
 // fetches the current balance of the user's buffer bag
 app.get('/api/buffer/balance', authenticateUser, async (req, res) => {
     const userId = req.user.id; // authenticated user id
-    console.log(`\n Fetching buffer balance for User ID: ${userId}`);
+    console.log(`\n⚙️ Fetching buffer balance for User ID: ${userId}`);
     try {
         const sql = 'SELECT buffer_bag_balance FROM users WHERE user_id = ?'; // sql to get balance
         console.log(`   Executing SQL for buffer balance: ${sql} with User ID: ${userId}`);
@@ -1017,7 +1017,7 @@ app.get('/api/buffer/balance', authenticateUser, async (req, res) => {
         console.log(`Server: GET Buffer balance response SENT for User ${userId}.`);
         return; // explicitly stop execution
     } catch (error) {
-        console.error(` Error fetching buffer balance for User ${userId}:`, error.message, error.stack);
+        console.error(`❌ Error fetching buffer balance for User ${userId}:`, error.message, error.stack);
         if (!res.headersSent) { res.status(500).json({ success: false, message: 'Could not retrieve buffer balance due to a server issue.' });}
         return; // stop execution
     }
@@ -1026,7 +1026,7 @@ app.get('/api/buffer/balance', authenticateUser, async (req, res) => {
 // handles a deposit into the user's buffer bag
 app.post('/api/buffer/deposit', authenticateUser, async (req, res) => {
     const userId = req.user.id; const { amount } = req.body; // user id and deposit amount
-    console.log(`\n Processing Buffer Deposit Request - User: ${userId}, Amount: ${amount}`);
+    console.log(`\n⚙️ Processing Buffer Deposit Request - User: ${userId}, Amount: ${amount}`);
     const depositAmount = parseFloat(amount); // parse to float
     if (isNaN(depositAmount) || depositAmount <= 0) { // validate amount
         console.warn(`   Deposit validation failed: Invalid amount ('${amount}')`);
@@ -1043,13 +1043,13 @@ app.post('/api/buffer/deposit', authenticateUser, async (req, res) => {
         const depositDesc = 'Manual buffer bag deposit.';
         const [transResult] = await connection.query(`INSERT INTO transactions (user_id, transaction_type, amount, transaction_status, description, is_buffer_transaction, transaction_date) VALUES (?, ?, ?, ?, ?, ?, NOW())`, [userId, 'BUFFER_DEPOSIT', depositAmount.toFixed(2), 'Completed', depositDesc, 1]);
         console.log(`      Buffer Deposit Transaction logged (ID: ${transResult.insertId})`);
-        await connection.commit(); console.log('    Buffer Deposit DB Transaction Committed.');
+        await connection.commit(); console.log('   ✅ Buffer Deposit DB Transaction Committed.');
         // get new balance to return to client
         const [balanceResult] = await dbPool.query('SELECT buffer_bag_balance FROM users WHERE user_id = ?', [userId]);
         const newBalance = parseFloat(balanceResult[0]?.buffer_bag_balance || 0).toFixed(2);
         res.status(200).json({ success: true, message: `Successfully deposited £${depositAmount.toFixed(2)}.`, new_balance: newBalance });
     } catch (error) {
-        console.error(` Error processing buffer deposit for User ${userId}:`, error);
+        console.error(`❌ Error processing buffer deposit for User ${userId}:`, error);
         if (connection) await connection.rollback().catch(rbErr => console.error('Rollback Error:', rbErr));
         res.status(500).json({ success: false, message: error.message || 'Failed to process deposit.' });
     } finally {
@@ -1067,7 +1067,7 @@ app.post('/api/buffer/deposit', authenticateUser, async (req, res) => {
 // handles a withdrawal from the user's buffer bag
 app.post('/api/buffer/withdraw', authenticateUser, async (req, res) => {
     const userId = req.user.id; const { amount } = req.body; // user id and withdrawal amount
-    console.log(`\n Processing Buffer Withdrawal Request - User: ${userId}, Amount: ${amount}`);
+    console.log(`\n⚙️ Processing Buffer Withdrawal Request - User: ${userId}, Amount: ${amount}`);
     const withdrawAmount = parseFloat(amount); // parse to float
     if (isNaN(withdrawAmount) || withdrawAmount <= 0) { // validate amount
         console.warn(`   Withdrawal validation failed: Invalid amount ('${amount}')`);
@@ -1094,11 +1094,11 @@ app.post('/api/buffer/withdraw', authenticateUser, async (req, res) => {
         const withdrawDesc = 'Manual buffer bag withdrawal.';
         const [transResult] = await connection.query(`INSERT INTO transactions (user_id, transaction_type, amount, transaction_status, description, is_buffer_transaction, transaction_date) VALUES (?, ?, ?, ?, ?, ?, NOW())`, [userId, 'BUFFER_WITHDRAWAL', withdrawAmount.toFixed(2), 'Completed', withdrawDesc, 1]);
         console.log(`      Buffer Withdrawal Transaction logged (ID: ${transResult.insertId})`);
-        await connection.commit(); console.log('    Buffer Withdrawal DB Transaction Committed.');
+        await connection.commit(); console.log('   ✅ Buffer Withdrawal DB Transaction Committed.');
         const newBalance = (currentBalance - withdrawAmount).toFixed(2); // calculate new balance
         res.status(200).json({ success: true, message: `Successfully withdrew £${withdrawAmount.toFixed(2)}.`, new_balance: newBalance });
     } catch (error) {
-        console.error(` Error processing buffer withdrawal for User ${userId}:`, error);
+        console.error(`❌ Error processing buffer withdrawal for User ${userId}:`, error);
         if (connection) await connection.rollback().catch(rbErr => console.error('Rollback Error:', rbErr));
         res.status(500).json({ success: false, message: error.message || 'Failed to process withdrawal.' });
     } finally {
@@ -1135,7 +1135,7 @@ app.use((req, res, next) => {
 
 // starts the server
 app.listen(PORT, () => {
-    console.log(`\n Server is running on port ${PORT}`);
+    console.log(`\n🚀 Server running on port ${PORT}`);
     console.log('--------------------------------------------------');
     console.log(` Plaid Environment:     ${plaidEnv}`);
     console.log(` Python Prediction URL: ${PYTHON_PREDICTION_URL || 'NOT SET! - Assessment endpoints require this.'}`);
