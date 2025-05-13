@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify # web application framework
+from flask import Flask, request, jsonify # 
 import joblib # for loading model
 import pandas as pd # data handling
 import traceback # used for detailed error logging
