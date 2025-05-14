@@ -22,8 +22,7 @@ CREATE TABLE `credit_data` (
   KEY `idx_user_recorded_at` (`user_id`, `recorded_at`),
 
   CONSTRAINT `fk_credit_data_user_id`    
-    FOREIGN KEY (`user_id`)             
-    REFERENCES `users` (`user_id`)     
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)     
     ON DELETE CASCADE                     
     ON UPDATE CASCADE                     
 );

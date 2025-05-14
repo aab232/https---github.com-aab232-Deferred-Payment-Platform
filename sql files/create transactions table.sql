@@ -10,7 +10,8 @@ CREATE TABLE `transactions` (
   
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
-  CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+  CONSTRAINT `transactions_ibfk_1` 
+	FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
 	ON DELETE CASCADE                     
     ON UPDATE CASCADE
   );

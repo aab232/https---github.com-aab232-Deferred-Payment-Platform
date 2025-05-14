@@ -9,10 +9,9 @@ CREATE TABLE IF NOT EXISTS `credit_assessments` (
   
   PRIMARY KEY (`assessment_id`),
   INDEX `idx_assessment_user_ts` (`user_id`, `assessment_timestamp`), -- fetching latest assessment
+  
   CONSTRAINT `fk_assessment_user_id`
-
-    FOREIGN KEY (`user_id`)
-    REFERENCES `users` (`user_id`)
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
     ON DELETE CASCADE
     ON UPDATE CASCADE
 );
